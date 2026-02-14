@@ -1,0 +1,58 @@
+### TCR Plan
+1. Add failing `DeleteCommand` tests first (parse + confirmation + force + all-accounts).
+2. Implement `DeleteCommand` parser/run flow with injected dependencies.
+3. Wire `delete` into CLI dispatch and smoke command-list messaging.
+4. Add integration coverage for single-delete and all-accounts delete.
+5. Run full verification suite.
+6. Mark story complete in tracking files and commit.
+
+### Implementation
+1. Cycle 1:
+- Changed: added `Tests/ApplPassTests/DeleteCommandTests.swift` (initial parse/behavior tests).
+- Result: `swift test --disable-sandbox` failed as expected (`DeleteCommand` missing).
+- Decision: continue (test-first expected failure).
+
+2. Cycle 2:
+- Changed: added `Sources/ApplPass/Commands/DeleteCommand.swift` with:
+  - `@Option` `service`, `account`
+  - `@Flag` `force`, `allAccounts`
+  - explicit parser (`-s/-a`, `--force`, `--all-accounts`, `--key=value`)
+  - deletion preview output before confirmation
+  - confirmation prompt (TTY) unless `--force`
+  - all-accounts flow listing accounts, then per-account `KeychainManager.deletePassword(for:)`
+  - typed `DeleteCommandError` mapping
+- Result: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: committed (`739af389`).
+
+3. Cycle 3:
+- Changed: wired `delete` dispatch in `Sources/ApplPass/ApplPass.swift`; updated command list text in `Tests/ApplPassTests/SmokeTests.swift`.
+- Result: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: committed (`d87bc790`).
+
+4. Cycle 4:
+- Changed: extended `Tests/ApplPassTests/DeleteCommandTests.swift` with serialized integration tests + test keychain backend.
+- Result: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: committed (`191e7677`).
+
+5. Cycle 5:
+- Changed: fixed `swift format lint` warnings in:
+  - `Sources/ApplPass/Commands/DeleteCommand.swift`
+  - `Tests/ApplPassTests/DeleteCommandTests.swift`
+- Result: full verification rerun passed.
+- Decision: included in completion commit.
+
+### Verification
+Passed:
+1. `swift build --disable-sandbox`
+2. `swift build -c release --disable-sandbox`
+3. `swift test --disable-sandbox --verbose`
+4. `swift format lint --recursive .`
+
+Additional note:
+- Manual release-binary calls against real keychain returned `Keychain operation failed with status -50`, and the same was reproducible with existing `list` command behavior (pre-existing runtime concern outside this story’s test harness).
+
+### Completion
+- Updated `prd.json`: `S15-delete-command` now has `"passes": true`.
+- Appended Iteration 15 entry to `progress.txt`.
+- Completion commit created: `xwoqorvq` (`2a388496`) with message `chore(ralph): complete story S15-delete-command`.
+- Working copy is clean.
