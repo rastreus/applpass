@@ -369,7 +369,7 @@
       "dependencies": [
         "S17-main-cli"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S19-readme-docs",
