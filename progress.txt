@@ -114,3 +114,14 @@ Date: 2026-02-14T08:02:15Z
 - Added `Tests/ApplPassTests/OutputFormatterTests.swift` covering table/json/csv/plain behavior, password redaction defaults, show-passwords opt-in, and JSON/CSV escaping edge cases.
 - Gotcha: `ISO8601DateFormatter` static storage fails Swift 6 strict concurrency sendability checks; date serialization uses value-based `Date.ISO8601Format()` instead.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 11 — S11-get-command — Get command implementation
+Date: 2026-02-14T08:15:28Z
+- Added `Sources/ApplPass/Commands/GetCommand.swift` with `GetCommand` conforming to `ParsableCommand`, including `service`, `account`, `format`, `clipboard`, and `valueOnly` command properties.
+- Implemented explicit CLI argument parsing for `get` (`-s/--service`, `-a/--account`, `-f/--format`, `-c/--clipboard`, `-v/--value-only`, plus `--key=value` forms) with typed user-facing parse errors.
+- Wired `ApplPass.run()` subcommand dispatch for `get`, with user-friendly unknown/missing command messages in `Sources/ApplPass/ApplPass.swift`.
+- Added output behavior paths: formatted output via `OutputFormatter` (with passwords shown), `--value-only` raw password output, and `--clipboard` copy via `/usr/bin/pbcopy` with safe confirmation output.
+- Added metadata option wrappers in `Sources/ApplPass/Commands/CommandArguments.swift` (`@Option`, `@Flag`) compatible with the project’s minimal vendored `ArgumentParser` implementation.
+- Added `Tests/ApplPassTests/GetCommandTests.swift` covering argument parsing, formatted/value-only/clipboard behavior, keychain and clipboard error mapping, and serialized add->get integration output verification.
+- Gotcha: the vendored `swift-argument-parser` in this repo is intentionally minimal (no built-in `@Option/@Flag` parsing or subcommand config), so command parsing/dispatch is implemented explicitly while retaining option/flag property annotations.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
