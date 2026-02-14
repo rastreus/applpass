@@ -197,3 +197,51 @@ Common errors and resolutions:
   Approve the keychain access prompt and retry.
 - `Failed to copy password to clipboard.`  
   Confirm `/usr/bin/pbcopy` is available and permitted in the current session.
+
+## Developer Build Instructions
+
+```bash
+# Debug build
+swift build
+
+# Release build
+swift build -c release
+
+# Run tests
+swift test --verbose
+```
+
+In constrained environments where SwiftPM sandboxing is blocked:
+
+```bash
+swift build --disable-sandbox
+swift build -c release --disable-sandbox
+swift test --disable-sandbox --verbose
+```
+
+Optional formatting lint:
+
+```bash
+swift format lint --recursive Sources/ Tests/
+```
+
+## Contributing
+
+Project workflow uses TCR (`test || commit || revert`) with Jujutsu (`jj`):
+
+```bash
+jj desc -m "feat(scope): describe one small change"
+swift build && swift test
+jj new || jj restore
+```
+
+Contribution expectations:
+- Keep changes small and test-backed.
+- Follow Swift 6 strict concurrency patterns.
+- Use Swift Testing (`@Suite`, `@Test`, `#expect`) instead of XCTest.
+- Follow code style (`.swift-format`) and avoid force unwrapping in production code.
+- Never log password values or commit sensitive material.
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE`.
