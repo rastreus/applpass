@@ -403,14 +403,14 @@ struct KeychainManager: Sendable {
     allowMissingPasswordData: Bool
   ) throws -> KeychainItem {
     let password: String
-    if let passwordData = attributes[kSecValueData as String] as? Data {
-      guard let decoded = String(data: passwordData, encoding: .utf8) else {
-        throw KeychainError.unexpectedPasswordData
-      }
-
-      password = decoded
-    } else if allowMissingPasswordData {
+    if allowMissingPasswordData {
+      // Metadata-only listings should not fail on opaque/non-UTF8 secret bytes.
       password = ""
+    } else if
+      let passwordData = attributes[kSecValueData as String] as? Data,
+      let decoded = String(data: passwordData, encoding: .utf8)
+    {
+      password = decoded
     } else {
       throw KeychainError.unexpectedPasswordData
     }
@@ -450,6 +450,16 @@ struct KeychainManager: Sendable {
     allowMissingPasswordData: Bool
   ) throws -> [KeychainItem] {
     if let attributes = result as? [String: Any] {
+      if allowMissingPasswordData {
+        return (try? [
+          decodeItem(
+            from: attributes,
+            fallbackQuery: fallbackQuery,
+            allowMissingPasswordData: true
+          )
+        ]) ?? []
+      }
+
       return [
         try decodeItem(
           from: attributes,
@@ -460,6 +470,16 @@ struct KeychainManager: Sendable {
     }
 
     if let itemDictionaries = result as? [[String: Any]] {
+      if allowMissingPasswordData {
+        return itemDictionaries.compactMap { item in
+          try? decodeItem(
+            from: item,
+            fallbackQuery: fallbackQuery,
+            allowMissingPasswordData: true
+          )
+        }
+      }
+
       return try itemDictionaries.map { item in
         try decodeItem(
           from: item,

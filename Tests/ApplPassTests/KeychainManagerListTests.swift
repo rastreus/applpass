@@ -145,4 +145,65 @@ struct KeychainManagerListTests {
     #expect(items[0].account == "bot@example.com")
     #expect(items[0].password.isEmpty)
   }
+
+  @Test("listPasswords metadata-only mode ignores non-UTF8 password bytes")
+  func listPasswordsMetadataOnlyIgnoresUndecodablePasswordData() throws {
+    let manager = KeychainManager { _, result in
+      let item: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword as String,
+        kSecAttrService as String: "binary-secret.example.com",
+        kSecAttrAccount as String: "bot@example.com",
+        kSecValueData as String: Data([0xFF, 0xFE]),
+        kSecAttrSynchronizable as String: true,
+      ]
+      result?.pointee = item as CFDictionary
+      return errSecSuccess
+    }
+    let query = KeychainQuery(
+      service: nil,
+      account: nil,
+      domain: nil,
+      includeShared: true,
+      itemClass: .genericPassword,
+      limit: 100
+    )
+
+    let items = try manager.listPasswords(matching: query, includePasswordData: false)
+    #expect(items.count == 1)
+    #expect(items[0].service == "binary-secret.example.com")
+    #expect(items[0].account == "bot@example.com")
+    #expect(items[0].password.isEmpty)
+  }
+
+  @Test("listPasswords metadata-only mode skips malformed entries")
+  func listPasswordsMetadataOnlySkipsMalformedEntries() throws {
+    let manager = KeychainManager { _, result in
+      let valid: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword as String,
+        kSecAttrService as String: "valid.example.com",
+        kSecAttrAccount as String: "bot@example.com",
+        kSecAttrSynchronizable as String: false,
+      ]
+      let malformed: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword as String,
+        kSecAttrService as String: "",
+        kSecAttrAccount as String: "",
+      ]
+      result?.pointee = [valid, malformed] as CFArray
+      return errSecSuccess
+    }
+    let query = KeychainQuery(
+      service: nil,
+      account: nil,
+      domain: nil,
+      includeShared: true,
+      itemClass: .genericPassword,
+      limit: 100
+    )
+
+    let items = try manager.listPasswords(matching: query, includePasswordData: false)
+    #expect(items.count == 1)
+    #expect(items[0].service == "valid.example.com")
+    #expect(items[0].account == "bot@example.com")
+  }
 }
