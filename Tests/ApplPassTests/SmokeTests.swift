@@ -7,4 +7,9 @@ struct SmokeTests {
   func versionConstantIsSet() {
     #expect(!ApplPass.version.isEmpty)
   }
+
+  @Test("Command configuration exposes version")
+  func commandConfigurationHasVersion() {
+    #expect(ApplPass.configuration.version == ApplPass.version)
+  }
 }
