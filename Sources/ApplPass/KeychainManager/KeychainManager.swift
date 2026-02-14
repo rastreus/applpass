@@ -8,6 +8,19 @@ struct KeychainManager: Sendable {
   /// - Parameter query: User-facing query filters.
   /// - Returns: A `CFDictionary` that can be passed to Security APIs.
   /// - Throws: `KeychainError.invalidParameter` when string filters are empty.
+  ///
+  /// Example:
+  /// ```swift
+  /// let query = KeychainQuery(
+  ///   service: "github.com",
+  ///   account: "bot@example.com",
+  ///   domain: nil,
+  ///   includeShared: true,
+  ///   itemClass: .internetPassword,
+  ///   limit: 1
+  /// )
+  /// let dictionary = try KeychainManager.buildQuery(for: query)
+  /// ```
   static func buildQuery(for query: KeychainQuery) throws -> CFDictionary {
     try validate(query)
 
