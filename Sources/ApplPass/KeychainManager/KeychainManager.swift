@@ -50,6 +50,26 @@ struct KeychainManager: Sendable {
     return try Self.decodeItem(from: attributes, fallbackQuery: query)
   }
 
+  /// Lists all keychain password items matching the provided filters.
+  ///
+  /// - Parameter query: Filters used to match keychain items.
+  /// - Returns: Matching items. Returns an empty array when no items are found.
+  /// - Throws: `KeychainError` when lookup fails for reasons other than not found.
+  func listPasswords(matching query: KeychainQuery) throws -> [KeychainItem] {
+    var result: CFTypeRef?
+    let dictionary = try listingQuery(for: query)
+    let status = copyMatching(dictionary as CFDictionary, &result)
+
+    switch status {
+    case errSecSuccess:
+      return []
+    case errSecItemNotFound:
+      return []
+    default:
+      throw Self.mappedError(for: status)
+    }
+  }
+
   /// Converts a high-level query model into a keychain query dictionary.
   ///
   /// - Parameter query: User-facing query filters.
@@ -159,6 +179,18 @@ struct KeychainManager: Sendable {
     dictionary[kSecReturnAttributes as String] = kCFBooleanTrue
     dictionary[kSecReturnData as String] = kCFBooleanTrue
     dictionary[kSecMatchLimit as String] = kSecMatchLimitOne
+
+    return dictionary
+  }
+
+  private func listingQuery(for query: KeychainQuery) throws -> [String: Any] {
+    guard var dictionary = try Self.buildQuery(for: query) as NSDictionary as? [String: Any] else {
+      throw KeychainError.operationFailed(errSecParam)
+    }
+
+    dictionary[kSecReturnAttributes as String] = kCFBooleanTrue
+    dictionary[kSecReturnData as String] = kCFBooleanTrue
+    dictionary[kSecMatchLimit as String] = kSecMatchLimitAll
 
     return dictionary
   }
