@@ -1,0 +1,26 @@
+### TCR Plan
+1. Tighten existing CI workflow checks on `main`.
+2. Add tag-triggered release workflow with release asset upload.
+3. Add `CHANGELOG.md` and wire release notes from changelog.
+4. Add optional pre-commit formatting hook and document CI/release/manual verification.
+5. Run full verification, then update tracking files and complete story.
+
+### Implementation
+1. Updated `.github/workflows/ci.yml` for `push`/`pull_request` on `main`, concurrency guard, and required format lint fallback to `swift run swift-format`; tests: `swift build --disable-sandbox && swift test --disable-sandbox` passed; decision: commit (`ci(ci): tighten main branch checks`).
+2. Added `.github/workflows/release.yml` for `v*` tags: build/test/lint/release build, package `applpass-<tag>-macos-arm64.tar.gz`, checksum, workflow artifact upload, GitHub release asset upload; tests: `swift build --disable-sandbox && swift test --disable-sandbox` passed; decision: commit (`ci(ci): add release workflow automation`).
+3. Added `CHANGELOG.md` and updated `.github/workflows/release.yml` to extract matching version notes into `dist/release-notes.md` for release body; tests: `swift build --disable-sandbox && swift test --disable-sandbox` passed; decision: commit (`docs(ci): add changelog and release notes wiring`).
+4. Added optional hook `.githooks/pre-commit` and documented CI/release/manual verification plus hook setup in `README.md`; tests: `swift build --disable-sandbox && swift test --disable-sandbox` passed; decision: commit (`docs(ci): document release workflow and optional hooks`).
+5. Refined release verification docs in `README.md` and locally dry-ran release packaging/changelog extraction logic; tests: `swift build --disable-sandbox && swift test --disable-sandbox` passed; decision: commit (`ci(ci): finalize workflow validation and story completion`, `docs(ci): refine release verification guidance`).
+
+### Verification
+- `swift build --disable-sandbox` passed.
+- `swift build -c release --disable-sandbox` passed.
+- `swift test --disable-sandbox --verbose` passed (132 tests).
+- `swift format lint --recursive .` passed.
+- Local release dry-run commands for artifact+checksum+changelog extraction passed.
+- Note: `actionlint`/`act` are not installed here, so GitHub-side trigger execution itself cannot be run locally.
+
+### Completion
+- Set `S20-ci-polish` to passed in `prd.json`.
+- Appended Iteration 20 summary to `progress.txt` with UTC timestamp `2026-02-14T16:40:13Z`.
+- Final tracking commit created: `chore(ralph): complete story S20-ci-polish` (`7afa96e0`).
