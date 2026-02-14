@@ -18,7 +18,7 @@
         "GitHub Actions workflow (.github/workflows/ci.yml) for build and test"
       ],
       "dependencies": [],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S02-data-models",
@@ -34,7 +34,9 @@
         "All types have proper documentation comments",
         "Unit tests verify Sendable conformance and Codable round-trip"
       ],
-      "dependencies": ["S01-project-setup"],
+      "dependencies": [
+        "S01-project-setup"
+      ],
       "passes": false
     },
     {
@@ -51,7 +53,9 @@
         "Error handling for invalid query parameters",
         "Documentation includes usage examples"
       ],
-      "dependencies": ["S02-data-models"],
+      "dependencies": [
+        "S02-data-models"
+      ],
       "passes": false
     },
     {
@@ -68,7 +72,9 @@
         "Unit tests with mock keychain scenarios (requires test keychain setup)",
         "Integration test adds item, retrieves it, verifies match"
       ],
-      "dependencies": ["S03-keychain-manager"],
+      "dependencies": [
+        "S03-keychain-manager"
+      ],
       "passes": false
     },
     {
@@ -85,7 +91,9 @@
         "Test with multiple items returns all matches",
         "Test with no matches returns empty array"
       ],
-      "dependencies": ["S04-keychain-get"],
+      "dependencies": [
+        "S04-keychain-get"
+      ],
       "passes": false
     },
     {
@@ -102,7 +110,9 @@
         "Integration test adds item, verifies retrieval",
         "Test cleanup: delete added items after test"
       ],
-      "dependencies": ["S04-keychain-get"],
+      "dependencies": [
+        "S04-keychain-get"
+      ],
       "passes": false
     },
     {
@@ -118,7 +128,9 @@
         "Integration test: add, update, retrieve, verify new password",
         "Test error when updating non-existent item"
       ],
-      "dependencies": ["S06-keychain-add"],
+      "dependencies": [
+        "S06-keychain-add"
+      ],
       "passes": false
     },
     {
@@ -134,7 +146,9 @@
         "Integration test: add, delete, verify not found",
         "Test deleting non-existent item behavior"
       ],
-      "dependencies": ["S06-keychain-add"],
+      "dependencies": [
+        "S06-keychain-add"
+      ],
       "passes": false
     },
     {
@@ -152,7 +166,9 @@
         "Test character set inclusion/exclusion",
         "Verify randomness (multiple calls produce different results)"
       ],
-      "dependencies": ["S01-project-setup"],
+      "dependencies": [
+        "S01-project-setup"
+      ],
       "passes": false
     },
     {
@@ -172,7 +188,9 @@
         "Test password redaction by default",
         "Test proper JSON escaping for special characters"
       ],
-      "dependencies": ["S02-data-models"],
+      "dependencies": [
+        "S02-data-models"
+      ],
       "passes": false
     },
     {
@@ -191,7 +209,10 @@
         "Unit tests for command argument parsing",
         "Integration test: add item, get it, verify output"
       ],
-      "dependencies": ["S04-keychain-get", "S10-output-formatter"],
+      "dependencies": [
+        "S04-keychain-get",
+        "S10-output-formatter"
+      ],
       "passes": false
     },
     {
@@ -209,7 +230,10 @@
         "Unit tests for filtering logic",
         "Integration test with multiple items"
       ],
-      "dependencies": ["S05-keychain-list", "S10-output-formatter"],
+      "dependencies": [
+        "S05-keychain-list",
+        "S10-output-formatter"
+      ],
       "passes": false
     },
     {
@@ -230,7 +254,10 @@
         "Test stdin input parsing",
         "Test generate flag integration"
       ],
-      "dependencies": ["S06-keychain-add", "S09-password-generator"],
+      "dependencies": [
+        "S06-keychain-add",
+        "S09-password-generator"
+      ],
       "passes": false
     },
     {
@@ -250,7 +277,10 @@
         "Unit tests for confirmation logic",
         "Test force flag bypasses confirmation"
       ],
-      "dependencies": ["S07-keychain-update", "S09-password-generator"],
+      "dependencies": [
+        "S07-keychain-update",
+        "S09-password-generator"
+      ],
       "passes": false
     },
     {
@@ -269,7 +299,9 @@
         "Test force flag behavior",
         "Test allAccounts deletes multiple"
       ],
-      "dependencies": ["S08-keychain-delete"],
+      "dependencies": [
+        "S08-keychain-delete"
+      ],
       "passes": false
     },
     {
@@ -287,7 +319,9 @@
         "Test count parameter generates multiple",
         "Test clipboard integration"
       ],
-      "dependencies": ["S09-password-generator"],
+      "dependencies": [
+        "S09-password-generator"
+      ],
       "passes": false
     },
     {
@@ -332,7 +366,9 @@
         "Tests clean up (delete items) in teardown",
         "swift test passes all integration tests"
       ],
-      "dependencies": ["S17-main-cli"],
+      "dependencies": [
+        "S17-main-cli"
+      ],
       "passes": false
     },
     {
@@ -350,7 +386,9 @@
         "License: MIT",
         "Examples directory with sample usage scripts"
       ],
-      "dependencies": ["S17-main-cli"],
+      "dependencies": [
+        "S17-main-cli"
+      ],
       "passes": false
     },
     {
@@ -368,7 +406,10 @@
         "Manual verification: push to main triggers CI",
         "Manual verification: create tag triggers release"
       ],
-      "dependencies": ["S18-integration-tests", "S19-readme-docs"],
+      "dependencies": [
+        "S18-integration-tests",
+        "S19-readme-docs"
+      ],
       "passes": false
     }
   ],

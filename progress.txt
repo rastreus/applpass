@@ -12,3 +12,14 @@ Date: 2026-02-13
 - Established TCR workflow with Jujutsu (jj)
 - Created Swift 6 skill documentation (.agents/skills/swift6/SKILL.md)
 - Ready to begin implementation with S01-project-setup
+
+## Iteration 1 — S01-project-setup — Project scaffolding and Package.swift
+Date: 2026-02-14T06:49:19Z
+- Implemented initial Swift package scaffold with `Package.swift`, strict concurrency, `.v6` language mode, and executable target `applpass`.
+- Added `Sources/ApplPass/ApplPass.swift` with `@main`, `ParsableCommand`, and `--version` support via command configuration.
+- Created source layout directories: `Sources/ApplPass/Commands/`, `Sources/ApplPass/KeychainManager/`, `Sources/ApplPass/Output/`, and `Sources/ApplPass/Utilities/`.
+- Added test scaffold in `Tests/ApplPassTests/SmokeTests.swift` using Swift Testing to verify version metadata wiring.
+- Added formatter config `.swift-format` with `lineLength = 100` and GitHub Actions workflow `.github/workflows/ci.yml` for build/test/lint/release checks.
+- Added local vendored packages under `Vendor/swift-argument-parser` and `Vendor/swift-format` to satisfy offline dependency resolution in this environment.
+- Added `.gitignore` entries for `.build/`, `.swiftpm/`, and `.home/` to prevent build artifacts from entering history.
+- Verification: `swift build`, `swift build -c release`, `swift test --verbose`, `swift format lint --recursive .`, and manual `./.build/release/applpass --version` all succeeded.
