@@ -198,3 +198,13 @@ Date: 2026-02-14T16:10:56Z
 - Enforced unique service/account values in every workflow via UUID-based fixture helpers and explicit teardown cleanup (`deleteGenericPassword`) with status assertions.
 - Gotcha: shared-password integration is simulated by storing synchronizable items (`sync: true`) in the test backend, which validates shared-only behavior without requiring live iCloud shared-group membership.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+
+## Iteration 19 — S19-readme-docs — README and documentation
+Date: 2026-02-14T16:30:23Z
+- Added a full README.md covering overview, requirements, installation, quick start, usage, command reference for get/list/add/update/delete/generate, security best practices, troubleshooting, developer build instructions, contributing workflow, and license reference.
+- Added MIT licensing with a new top-level LICENSE file and linked it from README.
+- Added runnable examples in examples/ (quick-start.sh, update-with-generate.sh, list-json.sh) plus examples/README.md documentation.
+- Added an agent-focused example skill at examples/skills/applpass-commands/SKILL.md with common automation command patterns.
+- Gotcha: this environment requires --disable-sandbox for swift build/swift test; release and verbose verification were run with that flag.
+- Verification passed: swift build --disable-sandbox, swift build -c release --disable-sandbox, swift test --disable-sandbox --verbose, swift format lint --recursive .

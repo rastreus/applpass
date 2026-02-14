@@ -390,7 +390,7 @@
       "dependencies": [
         "S17-main-cli"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S20-ci-polish",
