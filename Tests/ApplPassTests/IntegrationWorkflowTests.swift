@@ -268,6 +268,198 @@ struct IntegrationWorkflowTests {
     #expect(getOutput.value == updatedPassword)
     #expect(getOutput.value != originalPassword)
   }
+
+  @Test("add then delete then get returns item-not-found error")
+  func addThenDeleteThenGetReturnsItemNotFound() throws {
+    let fixture = IntegrationFixture()
+    defer {
+      for status in fixture.teardownStatuses() {
+        #expect([errSecSuccess, errSecItemNotFound].contains(status))
+      }
+    }
+
+    let service = fixture.makeUniqueService("add-delete-get")
+    let account = fixture.makeUniqueAccount()
+    let password = "secret-\(UUID().uuidString)"
+    fixture.trackForCleanup(service: service, account: account)
+
+    var addCommand = AddCommand(
+      service: service,
+      account: account,
+      label: "Workflow Add/Delete/Get",
+      stdin: false,
+      generate: false,
+      sync: false,
+      length: 32,
+      addPassword: { service, account, password, label, sync in
+        try fixture.manager.addPassword(
+          service: service,
+          account: account,
+          password: password,
+          label: label,
+          sync: sync
+        )
+      },
+      generatePassword: { _ in
+        Issue.record("Password generation should not be used in this workflow test.")
+        return ""
+      },
+      readStdinLine: {
+        Issue.record("stdin input should not be used in this workflow test.")
+        return nil
+      },
+      promptPassword: {
+        password
+      },
+      output: { _ in
+      }
+    )
+
+    try addCommand.run()
+
+    let deleteOutput = SendableBox<[String]>([])
+    var deleteCommand = DeleteCommand(
+      service: service,
+      account: account,
+      force: true,
+      allAccounts: false,
+      deletePassword: { query in
+        try fixture.manager.deletePassword(for: query)
+      },
+      listPasswords: { query in
+        try fixture.manager.listPasswords(matching: query)
+      },
+      confirmDelete: { _ in
+        Issue.record("Confirmation should be bypassed when --force is used.")
+        return false
+      },
+      output: { message in
+        deleteOutput.value.append(message)
+      }
+    )
+
+    try deleteCommand.run()
+    #expect(
+      deleteOutput.value
+        == [
+          "Will delete password for service '\(service)' and account '\(account)'.",
+          "Deleted password for service '\(service)' and account '\(account)'.",
+        ]
+    )
+
+    var getCommand = GetCommand(
+      service: service,
+      account: account,
+      format: .plain,
+      clipboard: false,
+      valueOnly: true,
+      getPassword: { query in
+        try fixture.manager.getPassword(for: query)
+      },
+      formatOutput: { items, style, showPasswords in
+        OutputFormatter.format(items, style: style, showPasswords: showPasswords)
+      },
+      output: { _ in
+      },
+      copyToClipboard: { _ in
+        Issue.record("Clipboard should not be used in this workflow test.")
+      }
+    )
+
+    #expect(throws: GetCommandError.keychainMessage("Password not found in keychain.")) {
+      try getCommand.run()
+    }
+  }
+
+  @Test("duplicate add returns duplicate-item error")
+  func duplicateAddReturnsDuplicateItemError() throws {
+    let fixture = IntegrationFixture()
+    defer {
+      for status in fixture.teardownStatuses() {
+        #expect([errSecSuccess, errSecItemNotFound].contains(status))
+      }
+    }
+
+    let service = fixture.makeUniqueService("add-duplicate")
+    let account = fixture.makeUniqueAccount()
+    let originalPassword = "secret-\(UUID().uuidString)"
+    let duplicatePassword = "secret-\(UUID().uuidString)"
+    fixture.trackForCleanup(service: service, account: account)
+
+    var initialAddCommand = AddCommand(
+      service: service,
+      account: account,
+      label: "Workflow Add/Duplicate",
+      stdin: false,
+      generate: false,
+      sync: false,
+      length: 32,
+      addPassword: { service, account, password, label, sync in
+        try fixture.manager.addPassword(
+          service: service,
+          account: account,
+          password: password,
+          label: label,
+          sync: sync
+        )
+      },
+      generatePassword: { _ in
+        Issue.record("Password generation should not be used in this workflow test.")
+        return ""
+      },
+      readStdinLine: {
+        Issue.record("stdin input should not be used in this workflow test.")
+        return nil
+      },
+      promptPassword: {
+        originalPassword
+      },
+      output: { _ in
+      }
+    )
+
+    try initialAddCommand.run()
+
+    var duplicateAddCommand = AddCommand(
+      service: service,
+      account: account,
+      label: "Workflow Add/Duplicate",
+      stdin: false,
+      generate: false,
+      sync: false,
+      length: 32,
+      addPassword: { service, account, password, label, sync in
+        try fixture.manager.addPassword(
+          service: service,
+          account: account,
+          password: password,
+          label: label,
+          sync: sync
+        )
+      },
+      generatePassword: { _ in
+        Issue.record("Password generation should not be used in this workflow test.")
+        return ""
+      },
+      readStdinLine: {
+        Issue.record("stdin input should not be used in this workflow test.")
+        return nil
+      },
+      promptPassword: {
+        duplicatePassword
+      },
+      output: { _ in
+      }
+    )
+
+    #expect(
+      throws: AddCommandError.keychainMessage(
+        "A password with these credentials already exists."
+      )
+    ) {
+      try duplicateAddCommand.run()
+    }
+  }
 }
 
 private final class IntegrationFixture: @unchecked Sendable {
@@ -446,8 +638,30 @@ private final class IntegrationTestKeychain: @unchecked Sendable {
   }
 
   func delete(_ query: CFDictionary) -> OSStatus {
-    _ = query
-    return errSecUnimplemented
+    let dictionary = query as NSDictionary
+    let itemClass = dictionary[kSecClass as String] as? String
+    let service = dictionary[kSecAttrService as String] as? String
+    let account = dictionary[kSecAttrAccount as String] as? String
+
+    let initialCount = items.count
+    items.removeAll { item in
+      let classMatches = item.itemClass == itemClass
+      let serviceMatches = item.service == service
+
+      if let account {
+        return classMatches
+          && serviceMatches
+          && item.account == account
+      }
+
+      return classMatches && serviceMatches
+    }
+
+    if initialCount == items.count {
+      return errSecItemNotFound
+    }
+
+    return errSecSuccess
   }
 
   func deleteGenericPassword(service: String, account: String) -> OSStatus {
