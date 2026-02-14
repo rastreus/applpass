@@ -1,0 +1,65 @@
+### TCR Plan
+1. Add main CLI scaffolding in `ApplPass.swift` (global options group, subcommand/help metadata, Package.swift version loader).
+2. Wire root and subcommand help dispatch while keeping existing command execution.
+3. Enforce exit codes (`0` success, `1` errors) in a custom `main()`.
+4. Add manifest version marker and smoke coverage for help/subcommands/version linkage.
+5. Run full verification, manual CLI checks, then mark story complete.
+
+### Implementation
+1. **Cycle 1**
+- Changed:
+  - Added `@OptionGroup` wrapper in `Sources/ApplPass/Commands/CommandArguments.swift:78`.
+  - Added help/version scaffolding and Package.swift version parsing in `Sources/ApplPass/ApplPass.swift:7`.
+- Verify: `swift build --disable-sandbox` + `swift test --disable-sandbox` passed.
+- Decision: **commit** (`feat(cli): scaffold root help and version metadata`).
+
+2. **Cycle 2**
+- First attempt failed smoke expectations after command-order text changed.
+- Decision: **revert** with `jj restore` (per TCR).
+- Reapplied in smaller step:
+  - Root help / `help` alias / `<subcommand> --help` dispatch in `Sources/ApplPass/ApplPass.swift:239`.
+  - Dynamic command-list assertions in `Tests/ApplPassTests/SmokeTests.swift:54`.
+- Verify: build + test passed.
+- Decision: **commit** (`feat(cli): add root and subcommand help dispatch`).
+
+3. **Cycle 3**
+- Changed:
+  - Added custom `main()` with explicit exit behavior in `Sources/ApplPass/ApplPass.swift:14`.
+- Verify: build + test passed.
+- Decision: **commit** (`fix(cli): enforce deterministic exit codes`).
+
+4. **Cycle 4**
+- Changed:
+  - Added manifest version marker `let applPassVersion = "0.1.0"` in `Package.swift:4`.
+  - Added smoke tests for:
+    - Package manifest/version linkage,
+    - expected subcommand order,
+    - root help examples,
+    - get help examples
+    in `Tests/ApplPassTests/SmokeTests.swift:17`.
+- Verify: build + test passed.
+- Decision: **commit** (`test(cli): cover manifest version and help text`).
+
+5. **Lint cleanup before completion**
+- Fixed lint warnings in:
+  - `Sources/ApplPass/ApplPass.swift:255`
+  - `Sources/ApplPass/Commands/CommandArguments.swift:80`
+  - `Tests/ApplPassTests/SmokeTests.swift:35`
+- Included in completion commit.
+
+### Verification
+- Full suite passed:
+  - `swift build --disable-sandbox`
+  - `swift build -c release --disable-sandbox`
+  - `swift test --disable-sandbox --verbose` (126 tests passed)
+  - `swift format lint --recursive .` (clean)
+- Manual checks on release binary passed:
+  - `.build/release/applpass --help` → clear help + examples, exit `0`
+  - `.build/release/applpass get --help` → clear command help + examples, exit `0`
+  - `.build/release/applpass --version` → `0.1.0`, exit `0`
+  - `.build/release/applpass does-not-exist` → user-friendly error, exit `1`
+
+### Completion
+- Marked story passed in `prd.json:351` (`S17-main-cli` at `prd.json:328`).
+- Appended iteration entry in `progress.txt:183`.
+- Completion commit created: `chore(ralph): complete story S17-main-cli` (commit `626f434d`).

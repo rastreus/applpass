@@ -1,0 +1,59 @@
+### TCR Plan
+1. Add serialized integration harness + in-memory keychain backend.
+2. Add `add → get` workflow test.
+3. Add `add → list` workflow test.
+4. Add `add → update → get` workflow test.
+5. Add `add → delete → get` + duplicate-add error workflow tests.
+6. Add shared-password access workflow test.
+7. Run full verification, then update tracking files.
+
+### Implementation
+1. Harness scaffold  
+- Changed: added `Tests/ApplPassTests/IntegrationWorkflowTests.swift:6` with `@Suite(.serialized)`, fixture, cleanup tracking, and backend scaffolding (`add/copyMatching`, teardown helper).  
+- Test result: `swift build --disable-sandbox` ✅, `swift test --disable-sandbox` ✅.  
+- Decision: commit `6db9918d` (`test(tests): scaffold integration workflow harness`).
+
+2. Add/get workflow  
+- Changed: added `add → get` test at `Tests/ApplPassTests/IntegrationWorkflowTests.swift:8`.  
+- Test result: build ✅, tests ✅ (`127` tests).  
+- Decision: commit `3e5b134e` (`test(commands): add add-get workflow integration test`).
+
+3. Add/list workflow  
+- Changed: added `add → list` test at `Tests/ApplPassTests/IntegrationWorkflowTests.swift:86`.  
+- Test result: build ✅, tests ✅ (`128` tests).  
+- Decision: commit `56ccad2d` (`test(commands): add add-list workflow integration test`).
+
+4. Add/update/get workflow  
+- Changed: added workflow test at `Tests/ApplPassTests/IntegrationWorkflowTests.swift:160` and implemented backend `update` at `Tests/ApplPassTests/IntegrationWorkflowTests.swift:707`.  
+- Test result: build ✅, tests ✅ (`129` tests).  
+- Decision: commit `ff6d5281` (`test(commands): add add-update-get workflow integration test`).
+
+5. Delete + duplicate workflows  
+- Changed: added `add → delete → get not found` at `Tests/ApplPassTests/IntegrationWorkflowTests.swift:272`, duplicate-add error test at `Tests/ApplPassTests/IntegrationWorkflowTests.swift:374`, and backend `delete` at `Tests/ApplPassTests/IntegrationWorkflowTests.swift:735`.  
+- Test result: build ✅, tests ✅ (`131` tests).  
+- Decision: commit `337034b9` (`test(commands): add delete and duplicate workflow integration tests`).
+
+6. Shared-password workflow  
+- Changed: added shared access test at `Tests/ApplPassTests/IntegrationWorkflowTests.swift:464` (sync/shared add + shared-only list assertion; personal-only exclusion check).  
+- Test result: build ✅, tests ✅ (`132` tests).  
+- Decision: commit `d90dd351` (`test(commands): add shared-password workflow integration test`).
+
+7. Tracking updates  
+- Changed: set S18 pass flag in `prd.json:354` and appended iteration log in `progress.txt:193`.  
+- Decision: commit `050fe6fb` (`chore(ralph): complete story S18-integration-tests`).
+
+No revert cycles were needed.
+
+### Verification
+Final story verification passed:
+- `swift build --disable-sandbox` ✅
+- `swift build -c release --disable-sandbox` ✅
+- `swift test --disable-sandbox --verbose` ✅ (`132` tests in `33` suites)
+- `swift format lint --recursive .` ✅
+
+### Completion
+- Story marked complete: `prd.json:372` (`"passes": true` for `S18-integration-tests`).
+- Progress entry added: `progress.txt:193`.
+- Completion commit: `050fe6fb`.
+
+Note: pre-existing unrelated working-copy file `.codex-outputs/S17-main-cli-final-1771083459.txt` remains untouched.
