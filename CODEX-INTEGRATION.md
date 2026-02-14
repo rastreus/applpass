@@ -17,106 +17,105 @@ This guide explains how to configure and use the Codex-integrated workflow for a
 
 ## Codex CLI Configuration
 
-The script attempts to detect your Codex CLI configuration automatically. You may need to customize it based on your setup.
+The script uses the **Codex CLI `exec` subcommand** for non-interactive execution.
 
-### Option 1: Standard Codex CLI
-
-If you have the OpenAI Codex CLI installed:
+### Default Configuration
 
 ```bash
-# Default configuration (script will use these)
-./ralph-codex.sh run
+codex exec \
+  --full-auto \
+  --model gpt-5.3-codex \
+  --add-dir .git \
+  --add-dir .jj \
+  -o .ralph-codex-output.txt \
+  - < context-file.txt
 ```
 
-The script uses:
-- Model: `gpt-5.3-codex` (change via `CODEX_MODEL`)
-- Timeout: 1800 seconds (30 minutes)
-- Max tokens: 8000
+**Flags explained:**
+- `exec` - Non-interactive mode (vs interactive TUI)
+- `--full-auto` - workspace-write sandbox + on-request approvals (no prompts)
+- `--model` - Which model to use
+- `--add-dir .git` - Grant write access to .git directory (for git operations)
+- `--add-dir .jj` - Grant write access to .jj directory (for jj commits)
+- `-o` - Output final message to file
+- `-` - Read prompt from stdin
 
-### Option 2: Custom Codex Command
+**Note:** JSON streaming (`--json`) is disabled by default. Enable with `CODEX_STREAM_JSON=true`.
 
-If your Codex CLI has a different name or path:
-
-```bash
-# Set custom command
-export CODEX_CMD="/path/to/your/codex"
-./ralph-codex.sh run
-
-# Or inline
-CODEX_CMD="my-codex" ./ralph-codex.sh run
-```
-
-### Option 3: Different Model
+### Customizing the Model
 
 ```bash
 # Use a different model
-export CODEX_MODEL="gpt-4-codex"
+export CODEX_MODEL="gpt-4"
 ./ralph-codex.sh run
 
 # Or inline
-CODEX_MODEL="gpt-4" ./ralph-codex.sh run
+CODEX_MODEL="gpt-4o" ./ralph-codex.sh run
 ```
 
-## Codex CLI Flags Detection
-
-The script detects which invocation pattern your Codex CLI supports:
-
-### Pattern 1: File Input (Preferred)
-```bash
-codex --model gpt-5.3-codex --file context.txt --timeout 1800
-```
-
-### Pattern 2: Stdin Input
-```bash
-cat context.txt | codex --model gpt-5.3-codex --timeout 1800
-```
-
-### Pattern 3: Interactive
-```bash
-# Falls back to interactive mode
-codex --model gpt-5.3-codex
-# You'll need to paste context manually
-```
-
-## Customizing the Codex Invocation
-
-If the auto-detection doesn't work, edit `ralph-codex.sh` line ~230 in the `invoke_codex()` function:
+### Enabling JSON Event Streaming
 
 ```bash
-# Find this section and modify:
-$codex_cmd \
-    --model "$CODEX_MODEL" \
-    --file "$context_file" \        # Adjust flags here
-    --timeout "$CODEX_TIMEOUT" \
-    --max-tokens "$CODEX_MAX_TOKENS" \
-    > "$codex_output" 2>&1
+# Enable JSON streaming and JSONL logs
+export CODEX_STREAM_JSON=true
+./ralph-codex.sh run
+
+# Or inline
+CODEX_STREAM_JSON=true ./ralph-codex.sh run
 ```
 
-Common flag variations:
+When enabled, full execution logs are saved to `.codex-outputs/<story-id>-<timestamp>.jsonl`.
+
+### Custom Codex Command Path
+
 ```bash
-# OpenAI CLI style
-codex --model X --input context.txt --timeout Y
-
-# Alternative style
-codex -m X -f context.txt -t Y
-
-# Chat-based API
-codex chat --model X < context.txt
-
-# Custom wrapper
-my-codex-wrapper context.txt --model X
+# If codex is not in PATH
+export CODEX_CMD="/usr/local/bin/codex"
+./ralph-codex.sh run
 ```
+
+## How It Works
+
+When you run `./ralph-codex.sh run`:
+
+1. **Builds context** - Creates a comprehensive context file (~1000-1500 lines) with:
+   - Recent progress
+   - AGENTS.md policy
+   - PROMPT.md instructions
+   - Swift 6 SKILL.md
+   - Story details
+   - Repository state
+
+2. **Invokes Codex** - Runs:
+   ```bash
+   codex exec --full-auto --model <model> --add-dir .git -o <output> - < context.txt
+   ```
+
+3. **Codex executes** - Codex reads the context and:
+   - Writes TCR plan
+   - Implements in small steps
+   - Runs `swift build && swift test` after each change
+   - Uses `jj new` (commit) or `jj restore` (revert)
+   - Updates prd.json and progress.txt
+
+4. **Verification** - Script runs full test suite:
+   - `swift build`
+   - `swift build -c release`
+   - `swift test --verbose`
+   - Checks prd.json was updated
+
+5. **Completion** - Story marked complete, ready for next iteration
 
 ## Workflow Example
 
 Here's a complete iteration workflow:
 
-### 1. Start Iteration
+### 1. Start Iteration (Fully Automated)
 ```bash
 $ ./ralph-codex.sh run
 
 ℹ Checking prerequisites...
-✓ Found Codex: CLI installed
+✓ Found Codex CLI: codex
 ✓ Found Swift: Swift version 6.2.3
 ✓ Found Jujutsu: jj 0.23.0
 ✓ All prerequisites met
@@ -135,16 +134,17 @@ Acceptance Criteria:
 ✓ All dependencies complete
 
 ℹ Building context for Codex...
-✓ Context built: /tmp/applpass-context-S01.abc123
+✓ Context built: /path/to/applpass/context-S01.abc123
 ℹ Context size: 1247 lines
 
-Invoke Codex for story S01-project-setup? [y/N] y
+ℹ Starting automated Codex execution...
 
 🤖 Invoking Codex for story: S01-project-setup
 🤖 Model: gpt-5.3-codex
-🤖 Context file: /tmp/applpass-context-S01.abc123
 🤖 Starting Codex session...
 ```
+
+**No prompt** - fully automated execution begins immediately.
 
 ### 2. Codex Works
 
@@ -258,26 +258,33 @@ Each file contains:
 ### Codex Not Found
 
 ```bash
-✗ Codex CLI not found. Install from OpenAI.
+✗ Codex CLI not found.
+ℹ Install from: https://platform.openai.com/docs/codex
 ```
 
-**Solution**: Install Codex CLI or set `CODEX_CMD`:
+**Solution**: Install Codex CLI from OpenAI, or set custom path:
 ```bash
 export CODEX_CMD="/usr/local/bin/codex"
 ```
 
-### Context Too Large
+### Missing 'exec' Subcommand
 
-If context exceeds model limits:
-
-**Solution 1**: Adjust max tokens:
 ```bash
-export CODEX_MAX_TOKENS=16000
+✗ Codex CLI found but doesn't have 'exec' subcommand
 ```
 
-**Solution 2**: Use a larger model:
+**Solution**: You may have a different tool named `codex`. Ensure you have the official OpenAI Codex CLI installed.
+
+### Authentication Error
+
 ```bash
-export CODEX_MODEL="gpt-5.3-codex-extended"
+Error: Not authenticated
+```
+
+**Solution**: Run `codex login` first:
+```bash
+codex login
+# Follow authentication flow
 ```
 
 ### Verification Fails
@@ -287,25 +294,35 @@ export CODEX_MODEL="gpt-5.3-codex-extended"
 ✗ Verification failed
 ```
 
-**Solution**: Review Codex output:
+**Solution**: Check the output files:
 ```bash
-cat .codex-outputs/S##-story-id-*.txt
+cat .ralph-codex-output.txt                    # Final message
+cat .codex-outputs/S##-story-id-*.jsonl        # Full execution log
 ```
 
 Then either:
 1. Fix manually and run `./ralph-codex.sh verify S##-story-id`
 2. Re-run iteration if Codex made an error
 
-### Codex Times Out
+### Network Access Issues
 
+If Codex can't install dependencies:
+
+**Solution**: Check that `--full-auto` enables network access. If needed, you can add:
 ```bash
-✗ Codex invocation failed with exit code: 124
+# Edit ralph-codex.sh, in invoke_codex function:
+-c sandbox_workspace_write.network_access=true
 ```
 
-**Solution**: Increase timeout:
+### Permission Denied for .git
+
 ```bash
-# Edit ralph-codex.sh, line ~10
-CODEX_TIMEOUT=3600  # 60 minutes
+Error: Permission denied: .git/...
+```
+
+**Solution**: The `--add-dir .git` flag should handle this. If not, check that your `jj` is working:
+```bash
+jj st  # Should show working copy status
 ```
 
 ## Environment Variables Reference
@@ -313,39 +330,40 @@ CODEX_TIMEOUT=3600  # 60 minutes
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CODEX_CMD` | `codex` | Path to Codex CLI executable |
-| `CODEX_MODEL` | `gpt-5.3-codex` | Model to use |
-| `CODEX_TIMEOUT` | `1800` | Timeout in seconds (30 min) |
-| `CODEX_MAX_TOKENS` | `8000` | Max tokens in response |
+| `CODEX_MODEL` | `gpt-5.3-codex` | Model to use for execution |
+| `CODEX_STREAM_JSON` | `false` | Enable JSON event streaming to .jsonl files |
 
-## Advanced: Custom Codex Wrapper
+## Advanced: Adding Custom Codex Flags
 
-If you need special handling, create a wrapper script:
+If you need additional configuration, edit the `invoke_codex()` function in `ralph-codex.sh`:
 
 ```bash
-#!/bin/bash
-# my-codex-wrapper.sh
-
-context_file=$1
-model=${2:-gpt-5.3-codex}
-
-# Your custom Codex invocation
-curl -X POST https://api.openai.com/v1/chat/completions \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"model\": \"$model\",
-    \"messages\": [{
-      \"role\": \"user\",
-      \"content\": \"$(cat $context_file | jq -Rs .)\"
-    }],
-    \"max_tokens\": 8000
-  }" | jq -r '.choices[0].message.content'
+# Around line 165, in invoke_codex():
+if ! $codex_cmd exec \
+    --full-auto \
+    --model "$CODEX_MODEL" \
+    --add-dir .git \
+    --add-dir "$HOME/.cache" \    # Add more directories here
+    -c sandbox_workspace_write.network_access=true \  # Add custom configs
+    -o "$CODEX_OUTPUT_FILE" \
+    --json \
+    - < "$context_file" 2>&1 | tee ".codex-outputs/${story_id}-$(date +%s).jsonl"; then
 ```
 
-Then:
+**Common additions:**
 ```bash
-export CODEX_CMD="./my-codex-wrapper.sh"
-./ralph-codex.sh run
+# More cache directories for Swift
+--add-dir "$HOME/Library/Caches/org.swift.swiftpm" \
+--add-dir "$HOME/.swiftpm" \
+
+# Enable network for package downloads (if needed)
+-c sandbox_workspace_write.network_access=true \
+
+# Higher reasoning effort
+-c model_reasoning_effort=xhigh \
+
+# Different approval mode
+--ask-for-approval never \  # Very dangerous!
 ```
 
 ## Tips for Best Results

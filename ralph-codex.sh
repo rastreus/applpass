@@ -12,9 +12,10 @@ PROMPT_FILE="$SCRIPT_DIR/PROMPT.md"
 SKILL_DIR="$SCRIPT_DIR/.agents/skills"
 
 # Codex configuration
-CODEX_MODEL="gpt-5.3-codex"  # Adjust to your Codex model
-CODEX_TIMEOUT=1800           # 30 minutes timeout
-CODEX_MAX_TOKENS=8000        # Adjust based on model
+CODEX_MODEL="${CODEX_MODEL:-gpt-5.3-codex}"  # Override with env var
+CODEX_OUTPUT_FILE="$SCRIPT_DIR/.ralph-codex-output.txt"
+CODEX_OUTPUTS_DIR="$SCRIPT_DIR/.codex-outputs"
+CODEX_STREAM_JSON="${CODEX_STREAM_JSON:-false}"  # set true to enable --json + jsonl
 
 # Colors
 RED='\033[0;31m'
@@ -35,13 +36,22 @@ check_prerequisites() {
     log_info "Checking prerequisites..."
     
     # Check Codex
-    if ! command -v codex &> /dev/null; then
-        log_error "Codex CLI not found. Install from OpenAI."
-        log_info "Alternative: Set CODEX_CMD environment variable to your Codex command"
+    local codex_cmd="${CODEX_CMD:-codex}"
+    if ! command -v "$codex_cmd" &> /dev/null; then
+        log_error "Codex CLI not found."
+        log_info "Install from: https://platform.openai.com/docs/codex"
+        log_info "Or set CODEX_CMD environment variable"
         exit 1
     fi
     
-    log_success "Found Codex: $(codex --version 2>/dev/null || echo 'CLI installed')"
+    # Verify it's the right Codex (has exec subcommand)
+    if ! $codex_cmd --help 2>&1 | grep -q 'exec'; then
+        log_error "Codex CLI found but doesn't have 'exec' subcommand"
+        log_info "Make sure you have the official OpenAI Codex CLI"
+        exit 1
+    fi
+    
+    log_success "Found Codex CLI: $codex_cmd"
     
     # Check Swift
     if ! command -v swift &> /dev/null; then
@@ -98,13 +108,36 @@ show_story() {
     log_info "Story: $story_id"
     echo ""
     
-    jq -r ".stories[] | select(.id == \"$story_id\") | 
-        \"${CYAN}Title:${NC} \" + .title + \"\n\" +
-        \"${CYAN}Description:${NC} \" + .description + \"\n\" +
-        \"${CYAN}Dependencies:${NC} \" + (.dependencies | join(\", \")) + \"\n\" +
-        \"${CYAN}Acceptance Criteria:${NC}\n\" +
+    # Get story data without color codes in jq
+    local story_data
+    story_data=$(jq -r ".stories[] | select(.id == \"$story_id\") | 
+        \"TITLE:\" + .title + \"\n\" +
+        \"DESC:\" + .description + \"\n\" +
+        \"DEPS:\" + (.dependencies | join(\", \")) + \"\n\" +
+        \"CRITERIA\n\" +
         (.acceptance_criteria | map(\"  - \" + .) | join(\"\n\"))
-    " "$PRD_FILE"
+    " "$PRD_FILE")
+    
+    # Format with colors using bash
+    echo "$story_data" | while IFS= read -r line; do
+        case "$line" in
+            TITLE:*)
+                echo -e "${CYAN}Title:${NC} ${line#TITLE:}"
+                ;;
+            DESC:*)
+                echo -e "${CYAN}Description:${NC} ${line#DESC:}"
+                ;;
+            DEPS:*)
+                echo -e "${CYAN}Dependencies:${NC} ${line#DEPS:}"
+                ;;
+            CRITERIA)
+                echo -e "${CYAN}Acceptance Criteria:${NC}"
+                ;;
+            *)
+                echo "$line"
+                ;;
+        esac
+    done
     
     echo ""
 }
@@ -320,67 +353,78 @@ invoke_codex() {
     log_codex "Model: $CODEX_MODEL"
     log_codex "Context file: $context_file"
     
-    # Determine Codex command
+    # Build Codex exec command
     local codex_cmd="${CODEX_CMD:-codex}"
     
-    # Build Codex invocation
-    # Adjust these flags based on your Codex CLI
-    local codex_output
-    codex_output=$(mktemp)
+    # Create outputs directory before tee tries to write to it
+    mkdir -p "$CODEX_OUTPUTS_DIR"
+    local ts
+    ts="$(date +%s)"
     
     log_codex "Starting Codex session..."
     
-    # Option 1: If your Codex CLI supports file input
-    if $codex_cmd --help 2>&1 | grep -q '\--file'; then
-        $codex_cmd \
-            --model "$CODEX_MODEL" \
-            --file "$context_file" \
-            --timeout "$CODEX_TIMEOUT" \
-            --max-tokens "$CODEX_MAX_TOKENS" \
-            > "$codex_output" 2>&1
+    # Use codex exec with proper flags
+    # - reads prompt from stdin
+    # --full-auto: workspace-write sandbox + on-request approvals
+    # --add-dir .git: allow git operations
+    # --add-dir .jj: allow jj to write commits
+    # -o: capture final message for verification
+    # --json: optional, get structured output events (controlled by CODEX_STREAM_JSON)
     
-    # Option 2: If it reads from stdin
-    elif $codex_cmd --help 2>&1 | grep -q 'stdin'; then
-        cat "$context_file" | $codex_cmd \
-            --model "$CODEX_MODEL" \
-            --timeout "$CODEX_TIMEOUT" \
-            --max-tokens "$CODEX_MAX_TOKENS" \
-            > "$codex_output" 2>&1
-    
-    # Option 3: Interactive mode (you may need to customize this)
-    else
-        log_warning "Codex CLI doesn't support file input or stdin"
-        log_info "Starting interactive session. Paste context manually or adjust script."
-        
-        # You might need to use 'expect' or similar for full automation
-        $codex_cmd --model "$CODEX_MODEL" > "$codex_output" 2>&1
+    local json_flags=()
+    if [ "$CODEX_STREAM_JSON" = "true" ]; then
+        json_flags=(--json)
     fi
     
-    local exit_code=$?
-    
-    if [ $exit_code -ne 0 ]; then
-        log_error "Codex invocation failed with exit code: $exit_code"
-        cat "$codex_output"
-        return 1
+    # Run codex exec, optionally streaming to JSONL file
+    if [ "$CODEX_STREAM_JSON" = "true" ]; then
+        # shellcheck disable=SC2294
+        if ! $codex_cmd exec \
+            --full-auto \
+            --model "$CODEX_MODEL" \
+            --add-dir .git \
+            --add-dir .jj \
+            --add-dir "$HOME/.cache" \
+            -o "$CODEX_OUTPUT_FILE" \
+            "${json_flags[@]}" \
+            - < "$context_file" 2>&1 | tee "$CODEX_OUTPUTS_DIR/${story_id}-${ts}.jsonl"; then
+            
+            log_error "Codex invocation failed"
+            return 1
+        fi
+    else
+        # No JSON streaming, just run directly
+        if ! $codex_cmd exec \
+            --full-auto \
+            --model "$CODEX_MODEL" \
+            --add-dir .git \
+            --add-dir .jj \
+            --add-dir "$HOME/.cache" \
+            -o "$CODEX_OUTPUT_FILE" \
+            - < "$context_file" 2>&1; then
+            
+            log_error "Codex invocation failed"
+            return 1
+        fi
     fi
     
     log_success "Codex completed"
     
-    # Show Codex output
-    echo ""
-    log_info "Codex Output:"
-    echo "=============================================="
-    cat "$codex_output"
-    echo "=============================================="
-    echo ""
+    # Show final output
+    if [ -f "$CODEX_OUTPUT_FILE" ]; then
+        echo ""
+        log_info "Codex Final Output:"
+        echo "=============================================="
+        cat "$CODEX_OUTPUT_FILE"
+        echo "=============================================="
+        echo ""
+        
+        # Save to archive
+        local output_file="$CODEX_OUTPUTS_DIR/${story_id}-final-${ts}.txt"
+        cp "$CODEX_OUTPUT_FILE" "$output_file"
+        log_info "Final output saved to: $output_file"
+    fi
     
-    # Save output for review
-    local output_file="$SCRIPT_DIR/.codex-outputs/${story_id}-$(date +%s).txt"
-    mkdir -p "$SCRIPT_DIR/.codex-outputs"
-    cp "$codex_output" "$output_file"
-    log_info "Output saved to: $output_file"
-    
-    rm "$codex_output"
     return 0
 }
 
@@ -421,16 +465,16 @@ verify_completion() {
     fi
     log_success "Release build passed"
     
-    if ! swift test; then
+    if ! swift test --verbose; then
         log_error "swift test failed"
         return 1
     fi
     log_success "All tests passed"
     
-    # Optional: swift-format
-    if command -v swift-format &> /dev/null; then
+    # Optional: swift format (Swift PM plugin)
+    if swift format --help &> /dev/null; then
         if ! swift format lint --recursive Sources/ Tests/ 2>/dev/null; then
-            log_warning "swift-format lint found issues"
+            log_warning "swift format lint found issues"
             log_warning "Run: swift format --in-place --recursive Sources/ Tests/"
         else
             log_success "Code formatting clean"
@@ -469,18 +513,9 @@ run_iteration() {
     log_success "Context built: $context_file"
     log_info "Context size: $(wc -l < "$context_file") lines"
     
-    # Confirm before invoking Codex
-    echo ""
-    read -p "$(echo -e ${YELLOW}Invoke Codex for story $story_id? [y/N] ${NC})" -n 1 -r
-    echo
+    # Invoke Codex (fully automated, no prompt)
+    log_info "Starting automated Codex execution..."
     
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        log_info "Iteration cancelled"
-        log_info "Context file preserved: $context_file"
-        return 1
-    fi
-    
-    # Invoke Codex
     if ! invoke_codex "$story_id" "$context_file"; then
         log_error "Codex invocation failed"
         log_info "Context file preserved: $context_file"
@@ -494,14 +529,15 @@ run_iteration() {
     if verify_completion "$story_id"; then
         log_success "✓ Story $story_id complete and verified!"
         
-        # Clean up context file
-        rm "$context_file"
+        # Clean up context and output files
+        rm -f "$context_file" "$CODEX_OUTPUT_FILE"
         
         return 0
     else
         log_error "✗ Verification failed"
         log_warning "Review Codex output and fix issues"
         log_info "Context file preserved: $context_file"
+        log_info "Output file preserved: $CODEX_OUTPUT_FILE"
         return 1
     fi
 }
@@ -554,6 +590,9 @@ show_status() {
 main() {
     local command=${1:-"run"}
     
+    # Make behavior deterministic regardless of where script is launched from
+    cd "$SCRIPT_DIR"
+    
     case "$command" in
         run)
             check_prerequisites
@@ -581,13 +620,26 @@ Commands:
   help            Show this help
 
 Environment Variables:
-  CODEX_CMD       Path to Codex CLI (default: codex)
-  CODEX_MODEL     Codex model to use (default: gpt-5.3-codex)
+  CODEX_CMD           Path to Codex CLI (default: codex)
+  CODEX_MODEL         Codex model to use (default: gpt-5.3-codex)
+  CODEX_STREAM_JSON   Enable JSON streaming (default: false)
+                      Set to 'true' to save JSONL event logs
 
 Examples:
-  $0 run                          # Start next iteration
-  $0 verify S01-project-setup     # Verify story
-  CODEX_MODEL=gpt-4 $0 run        # Use different model
+  $0 run                              # Start next iteration
+  $0 verify S01-project-setup         # Verify story
+  CODEX_MODEL=gpt-4 $0 run            # Use different model
+  CODEX_STREAM_JSON=true $0 run       # Enable JSON streaming
+  
+Codex Flags Used:
+  codex exec --full-auto --model <model> --add-dir .git --add-dir .jj -o <file> - < context.txt
+  
+  --full-auto: workspace-write sandbox + on-request approvals
+  --add-dir .git: allows git operations
+  --add-dir .jj: allows jj to write commits
+  -o: captures final message for verification
+  --json: (optional) enable with CODEX_STREAM_JSON=true
+  -: reads prompt from stdin
 EOF
             ;;
         *)
