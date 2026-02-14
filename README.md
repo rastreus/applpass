@@ -167,3 +167,33 @@ Commands that support `--format` accept:
 - `json` for scripting and API workflows
 - `csv` for spreadsheet imports
 - `plain` for compact tab-separated output
+
+## Security Best Practices
+
+- Never pass passwords as CLI arguments; use `--stdin` or interactive prompts.
+- Avoid storing secrets in shell history (`printf` pipe or read from a secure source).
+- Use `--clipboard` only when needed and clear clipboard contents after use.
+- Do not run with `--show-passwords` unless output is going to a trusted sink.
+- Rely on macOS Keychain prompts and do not disable access controls.
+- Keep automation logs free of password values.
+
+## Troubleshooting
+
+Common errors and resolutions:
+
+- `Missing required option: --service.` or `--account.`  
+  Provide required flags for the selected command.
+- `Unknown command '<name>'. Available commands: ...`  
+  Run `applpass --help` and use one of: `get`, `list`, `add`, `update`, `delete`, `generate`.
+- `Interactive password entry requires a TTY. Use --stdin or --generate.`  
+  Use `--stdin` in non-interactive shells or CI.
+- `Interactive confirmation requires a TTY. Use --force to skip confirmation.`  
+  Add `--force` for non-interactive `update` and `delete` flows.
+- `A password with these credentials already exists.`  
+  Use `update` instead of `add`, or choose a different service/account pair.
+- `Password not found in keychain.`  
+  Verify the exact `--service` and `--account` values; try `applpass list --search <text>`.
+- `Access denied. Please allow access when prompted.`  
+  Approve the keychain access prompt and retry.
+- `Failed to copy password to clipboard.`  
+  Confirm `/usr/bin/pbcopy` is available and permitted in the current session.
