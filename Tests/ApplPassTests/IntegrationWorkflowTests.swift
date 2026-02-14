@@ -5,6 +5,83 @@ import Testing
 
 @Suite(.serialized)
 struct IntegrationWorkflowTests {
+  @Test("add then get returns stored password")
+  func addThenGetReturnsStoredPassword() throws {
+    let fixture = IntegrationFixture()
+    defer {
+      for status in fixture.teardownStatuses() {
+        #expect([errSecSuccess, errSecItemNotFound].contains(status))
+      }
+    }
+
+    let service = fixture.makeUniqueService("add-get")
+    let account = fixture.makeUniqueAccount()
+    let password = "secret-\(UUID().uuidString)"
+    fixture.trackForCleanup(service: service, account: account)
+
+    let addOutput = SendableBox("")
+    var addCommand = AddCommand(
+      service: service,
+      account: account,
+      label: "Workflow Add/Get",
+      stdin: false,
+      generate: false,
+      sync: false,
+      length: 32,
+      addPassword: { service, account, password, label, sync in
+        try fixture.manager.addPassword(
+          service: service,
+          account: account,
+          password: password,
+          label: label,
+          sync: sync
+        )
+      },
+      generatePassword: { _ in
+        Issue.record("Password generation should not be used in this workflow test.")
+        return ""
+      },
+      readStdinLine: {
+        Issue.record("stdin input should not be used in this workflow test.")
+        return nil
+      },
+      promptPassword: {
+        password
+      },
+      output: { message in
+        addOutput.value = message
+      }
+    )
+
+    try addCommand.run()
+    #expect(
+      addOutput.value == "Added password for service '\(service)' and account '\(account)'."
+    )
+
+    let getOutput = SendableBox("")
+    var getCommand = GetCommand(
+      service: service,
+      account: account,
+      format: .plain,
+      clipboard: false,
+      valueOnly: true,
+      getPassword: { query in
+        try fixture.manager.getPassword(for: query)
+      },
+      formatOutput: { items, style, showPasswords in
+        OutputFormatter.format(items, style: style, showPasswords: showPasswords)
+      },
+      output: { message in
+        getOutput.value = message
+      },
+      copyToClipboard: { _ in
+        Issue.record("Clipboard should not be used in this workflow test.")
+      }
+    )
+
+    try getCommand.run()
+    #expect(getOutput.value == password)
+  }
 }
 
 private final class IntegrationFixture: @unchecked Sendable {
