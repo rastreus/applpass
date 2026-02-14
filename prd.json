@@ -1,0 +1,381 @@
+{
+  "project": "applpass",
+  "description": "Swift CLI tool for macOS Keychain password management",
+  "version": "1.0.0",
+  "stories": [
+    {
+      "id": "S01-project-setup",
+      "title": "Project scaffolding and Package.swift",
+      "description": "Create initial Swift package structure with proper dependencies and configuration",
+      "acceptance_criteria": [
+        "Package.swift targets Swift 6.2.3 with strict concurrency enabled",
+        "Directory structure matches design: Sources/ApplPass/, Tests/ApplPassTests/",
+        "Dependencies: Swift Argument Parser 1.5+, swift-format 600+",
+        "swiftLanguageModes set to .v6",
+        ".swift-format config file present with 100-char line length",
+        "swift build succeeds with zero warnings",
+        "Basic ApplPass.swift with @main and --version flag",
+        "GitHub Actions workflow (.github/workflows/ci.yml) for build and test"
+      ],
+      "dependencies": [],
+      "passes": false
+    },
+    {
+      "id": "S02-data-models",
+      "title": "Core data models (KeychainItem, KeychainQuery, errors)",
+      "description": "Define Sendable data structures for keychain items and queries",
+      "acceptance_criteria": [
+        "KeychainItem struct with all fields from design (service, account, password, etc.)",
+        "KeychainItem conforms to Sendable, Equatable, Codable",
+        "ItemClass enum (internetPassword, genericPassword) is Sendable",
+        "KeychainQuery struct with optional filter fields",
+        "KeychainError enum with LocalizedError conformance",
+        "Error cases: itemNotFound, duplicateItem, unexpectedPasswordData, authorizationDenied, invalidParameter",
+        "All types have proper documentation comments",
+        "Unit tests verify Sendable conformance and Codable round-trip"
+      ],
+      "dependencies": ["S01-project-setup"],
+      "passes": false
+    },
+    {
+      "id": "S03-keychain-manager",
+      "title": "KeychainManager core implementation",
+      "description": "Implement keychain operations using Security framework",
+      "acceptance_criteria": [
+        "KeychainManager struct with query building methods",
+        "buildQuery(for:) converts KeychainQuery to CFDictionary",
+        "Handles kSecClass, kSecAttrServer, kSecAttrAccount correctly",
+        "Supports kSecAttrSynchronizable for shared passwords",
+        "Unit tests for query construction with various parameters",
+        "Tests verify correct dictionary keys and values",
+        "Error handling for invalid query parameters",
+        "Documentation includes usage examples"
+      ],
+      "dependencies": ["S02-data-models"],
+      "passes": false
+    },
+    {
+      "id": "S04-keychain-get",
+      "title": "Keychain get operation",
+      "description": "Implement password retrieval from keychain",
+      "acceptance_criteria": [
+        "KeychainManager.getPassword(for:) method implemented",
+        "Uses SecItemCopyMatching with proper query",
+        "Returns KeychainItem with all metadata",
+        "Decodes password data to String correctly",
+        "Throws KeychainError.itemNotFound when not found",
+        "Throws KeychainError.authorizationDenied on access denial",
+        "Unit tests with mock keychain scenarios (requires test keychain setup)",
+        "Integration test adds item, retrieves it, verifies match"
+      ],
+      "dependencies": ["S03-keychain-manager"],
+      "passes": false
+    },
+    {
+      "id": "S05-keychain-list",
+      "title": "Keychain list operation",
+      "description": "Implement listing all matching keychain items",
+      "acceptance_criteria": [
+        "KeychainManager.listPasswords(matching:) method",
+        "Returns array of KeychainItem",
+        "Supports kSecMatchLimitAll for multiple results",
+        "Handles empty results (returns empty array, not error)",
+        "Filters by service, account, shared status",
+        "Unit tests verify filtering logic",
+        "Test with multiple items returns all matches",
+        "Test with no matches returns empty array"
+      ],
+      "dependencies": ["S04-keychain-get"],
+      "passes": false
+    },
+    {
+      "id": "S06-keychain-add",
+      "title": "Keychain add operation",
+      "description": "Implement adding passwords to keychain",
+      "acceptance_criteria": [
+        "KeychainManager.addPassword(service:account:password:label:sync:) method",
+        "Uses SecItemAdd with proper attributes",
+        "Detects and throws KeychainError.duplicateItem",
+        "Sets kSecAttrSynchronizable based on sync parameter",
+        "Sets kSecAttrLabel for user-friendly names",
+        "Unit test verifies duplicate detection",
+        "Integration test adds item, verifies retrieval",
+        "Test cleanup: delete added items after test"
+      ],
+      "dependencies": ["S04-keychain-get"],
+      "passes": false
+    },
+    {
+      "id": "S07-keychain-update",
+      "title": "Keychain update operation",
+      "description": "Implement updating existing passwords",
+      "acceptance_criteria": [
+        "KeychainManager.updatePassword(for:newPassword:) method",
+        "Uses SecItemUpdate with proper query and attributes",
+        "Throws itemNotFound if password doesn't exist",
+        "Only updates password, preserves other metadata",
+        "Unit test verifies update doesn't affect other fields",
+        "Integration test: add, update, retrieve, verify new password",
+        "Test error when updating non-existent item"
+      ],
+      "dependencies": ["S06-keychain-add"],
+      "passes": false
+    },
+    {
+      "id": "S08-keychain-delete",
+      "title": "Keychain delete operation",
+      "description": "Implement password deletion from keychain",
+      "acceptance_criteria": [
+        "KeychainManager.deletePassword(for:) method",
+        "Uses SecItemDelete with query",
+        "Throws itemNotFound if item doesn't exist",
+        "Returns successfully for already-deleted items (idempotent)",
+        "Unit test verifies deletion",
+        "Integration test: add, delete, verify not found",
+        "Test deleting non-existent item behavior"
+      ],
+      "dependencies": ["S06-keychain-add"],
+      "passes": false
+    },
+    {
+      "id": "S09-password-generator",
+      "title": "Password generation utility",
+      "description": "Cryptographically secure random password generation",
+      "acceptance_criteria": [
+        "PasswordGenerator.generate(length:includeSymbols:includeUppercase:includeLowercase:includeDigits:) method",
+        "Uses SecRandomCopyBytes for cryptographic randomness",
+        "Default length: 32 characters",
+        "Configurable character sets (uppercase, lowercase, digits, symbols)",
+        "Generated passwords meet complexity requirements",
+        "Unit tests verify length matches request",
+        "Parameterized tests for lengths: 16, 32, 64, 128",
+        "Test character set inclusion/exclusion",
+        "Verify randomness (multiple calls produce different results)"
+      ],
+      "dependencies": ["S01-project-setup"],
+      "passes": false
+    },
+    {
+      "id": "S10-output-formatter",
+      "title": "Output formatting (table, JSON, plain)",
+      "description": "Format keychain items for different output styles",
+      "acceptance_criteria": [
+        "OutputStyle enum: table, json, csv, plain",
+        "OutputFormatter.format(_:style:showPasswords:) method",
+        "Table format: aligned columns with headers",
+        "JSON format: valid JSON array with proper escaping",
+        "CSV format: RFC 4180 compliant",
+        "Plain format: value-only output (for piping)",
+        "Passwords excluded by default (security)",
+        "showPasswords parameter adds password column/field",
+        "Unit tests for each format",
+        "Test password redaction by default",
+        "Test proper JSON escaping for special characters"
+      ],
+      "dependencies": ["S02-data-models"],
+      "passes": false
+    },
+    {
+      "id": "S11-get-command",
+      "title": "Get command implementation",
+      "description": "CLI command to retrieve a single password",
+      "acceptance_criteria": [
+        "GetCommand struct conforming to ParsableCommand",
+        "@Option properties: service, account",
+        "@Flag properties: format, clipboard, valueOnly",
+        "Calls KeychainManager.getPassword(for:)",
+        "Outputs formatted result using OutputFormatter",
+        "valueOnly flag outputs just password string",
+        "clipboard flag copies to clipboard (using pbcopy)",
+        "Error handling with user-friendly messages",
+        "Unit tests for command argument parsing",
+        "Integration test: add item, get it, verify output"
+      ],
+      "dependencies": ["S04-keychain-get", "S10-output-formatter"],
+      "passes": false
+    },
+    {
+      "id": "S12-list-command",
+      "title": "List command implementation",
+      "description": "CLI command to list passwords",
+      "acceptance_criteria": [
+        "ListCommand struct conforming to ParsableCommand",
+        "@Option properties: service, account, search, format",
+        "@Flag properties: sharedOnly, personalOnly, showPasswords",
+        "Calls KeychainManager.listPasswords(matching:)",
+        "Filters results based on flags",
+        "Outputs using OutputFormatter with chosen format",
+        "Search flag filters by substring match",
+        "Unit tests for filtering logic",
+        "Integration test with multiple items"
+      ],
+      "dependencies": ["S05-keychain-list", "S10-output-formatter"],
+      "passes": false
+    },
+    {
+      "id": "S13-add-command",
+      "title": "Add command implementation",
+      "description": "CLI command to add passwords",
+      "acceptance_criteria": [
+        "@Option properties: service, account, label",
+        "@Flag properties: stdin, generate, sync, length",
+        "Interactive mode: prompts for password (secure input)",
+        "stdin flag: reads password from stdin",
+        "generate flag: uses PasswordGenerator",
+        "length option: sets generated password length",
+        "Validates service and account are not empty",
+        "Calls KeychainManager.addPassword()",
+        "Success message includes service and account",
+        "Unit tests for input handling",
+        "Test stdin input parsing",
+        "Test generate flag integration"
+      ],
+      "dependencies": ["S06-keychain-add", "S09-password-generator"],
+      "passes": false
+    },
+    {
+      "id": "S14-update-command",
+      "title": "Update command implementation",
+      "description": "CLI command to update passwords",
+      "acceptance_criteria": [
+        "@Option properties: service, account",
+        "@Flag properties: stdin, generate, length, force",
+        "Interactive mode: prompts for new password",
+        "stdin flag: reads new password from stdin",
+        "generate flag: generates new password",
+        "force flag: skip confirmation prompt",
+        "Confirmation prompt (unless --force)",
+        "Calls KeychainManager.updatePassword()",
+        "Success message shows updated credentials",
+        "Unit tests for confirmation logic",
+        "Test force flag bypasses confirmation"
+      ],
+      "dependencies": ["S07-keychain-update", "S09-password-generator"],
+      "passes": false
+    },
+    {
+      "id": "S15-delete-command",
+      "title": "Delete command implementation",
+      "description": "CLI command to delete passwords",
+      "acceptance_criteria": [
+        "@Option properties: service, account",
+        "@Flag properties: force, allAccounts",
+        "Confirmation prompt (unless --force)",
+        "Shows what will be deleted before confirmation",
+        "allAccounts flag: delete all for service",
+        "Calls KeychainManager.deletePassword()",
+        "Success message confirms deletion",
+        "Unit tests for confirmation flow",
+        "Test force flag behavior",
+        "Test allAccounts deletes multiple"
+      ],
+      "dependencies": ["S08-keychain-delete"],
+      "passes": false
+    },
+    {
+      "id": "S16-generate-command",
+      "title": "Generate command (standalone)",
+      "description": "CLI command to generate passwords without storing",
+      "acceptance_criteria": [
+        "@Option properties: length, count",
+        "@Flag properties: noUppercase, noLowercase, noDigits, noSymbols, clipboard",
+        "Generates password(s) using PasswordGenerator",
+        "count option: generate multiple passwords",
+        "clipboard flag: copy to clipboard",
+        "Outputs generated passwords to stdout",
+        "Unit tests for character set flags",
+        "Test count parameter generates multiple",
+        "Test clipboard integration"
+      ],
+      "dependencies": ["S09-password-generator"],
+      "passes": false
+    },
+    {
+      "id": "S17-main-cli",
+      "title": "Main CLI integration and help",
+      "description": "Wire all commands into main CLI with proper help",
+      "acceptance_criteria": [
+        "ApplPass.swift defines main ParsableCommand",
+        "Subcommands: get, list, add, update, delete, generate",
+        "@OptionGroup for global options",
+        "Version flag (--version) shows version from Package.swift",
+        "Help text is clear and examples included",
+        "Error messages are user-friendly",
+        "Exit codes: 0 = success, 1 = error",
+        "Manual test: applpass --help",
+        "Manual test: applpass get --help",
+        "Manual test: applpass --version"
+      ],
+      "dependencies": [
+        "S11-get-command",
+        "S12-list-command",
+        "S13-add-command",
+        "S14-update-command",
+        "S15-delete-command",
+        "S16-generate-command"
+      ],
+      "passes": false
+    },
+    {
+      "id": "S18-integration-tests",
+      "title": "End-to-end integration test suite",
+      "description": "Comprehensive integration tests for full workflows",
+      "acceptance_criteria": [
+        "Test suite marked with @Suite and .serialized (avoid keychain conflicts)",
+        "Test: add → get → verify password",
+        "Test: add → list → verify in results",
+        "Test: add → update → get → verify new password",
+        "Test: add → delete → get → verify not found",
+        "Test: add duplicate → verify error",
+        "Test: shared password access (if bot is in shared group)",
+        "All integration tests use unique service names to avoid conflicts",
+        "Tests clean up (delete items) in teardown",
+        "swift test passes all integration tests"
+      ],
+      "dependencies": ["S17-main-cli"],
+      "passes": false
+    },
+    {
+      "id": "S19-readme-docs",
+      "title": "README and documentation",
+      "description": "Complete user-facing documentation",
+      "acceptance_criteria": [
+        "README.md covers: overview, installation, requirements, usage",
+        "Command reference with examples for each command",
+        "Security best practices section",
+        "Troubleshooting guide (common errors)",
+        "Quick start guide (install → first command)",
+        "Build instructions for developers",
+        "Contributing guidelines (code style, TCR workflow)",
+        "License: MIT",
+        "Examples directory with sample usage scripts"
+      ],
+      "dependencies": ["S17-main-cli"],
+      "passes": false
+    },
+    {
+      "id": "S20-ci-polish",
+      "title": "CI/CD final polish and release workflow",
+      "description": "Complete CI/CD setup with release automation",
+      "acceptance_criteria": [
+        "GitHub Actions workflow runs on push to main",
+        "CI checks: swift build, swift test, swift format lint",
+        "Release workflow creates GitHub release on tag",
+        "Binary artifact uploaded to release",
+        "CHANGELOG.md with version history",
+        "Pre-commit hook for swift-format (optional)",
+        "All CI checks passing on main branch",
+        "Manual verification: push to main triggers CI",
+        "Manual verification: create tag triggers release"
+      ],
+      "dependencies": ["S18-integration-tests", "S19-readme-docs"],
+      "passes": false
+    }
+  ],
+  "metadata": {
+    "created": "2026-02-13",
+    "last_updated": "2026-02-13",
+    "sprint_version": "1.0",
+    "total_stories": 20
+  }
+}

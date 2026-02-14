@@ -1,0 +1,14 @@
+## applpass — Iteration Progress Log
+
+This file tracks what each iteration accomplished. Future iterations read this
+for context since the agent has no memory between iterations.
+
+---
+
+## Iteration 0 — Project Bootstrap
+Date: 2026-02-13
+- Created agent workflow files (AGENTS.md, PROMPT.md, prd.json, ralph-applpass.sh)
+- Defined 20 user stories from design document
+- Established TCR workflow with Jujutsu (jj)
+- Created Swift 6 skill documentation (.agents/skills/swift6/SKILL.md)
+- Ready to begin implementation with S01-project-setup
