@@ -22,6 +22,10 @@ struct KeychainManager: Sendable {
       dictionary[kSecAttrAccount as String] = account
     }
 
+    dictionary[kSecAttrSynchronizable as String] =
+      query.includeShared ? kSecAttrSynchronizableAny : kCFBooleanFalse
+    dictionary[kSecMatchLimit as String] = matchLimitValue(for: query.limit)
+
     return dictionary as CFDictionary
   }
 
@@ -57,5 +61,13 @@ struct KeychainManager: Sendable {
     }
 
     return trimmed
+  }
+
+  private static func matchLimitValue(for limit: Int) -> Any {
+    if limit == 1 {
+      return kSecMatchLimitOne
+    }
+
+    return limit
   }
 }
