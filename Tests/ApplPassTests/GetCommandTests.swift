@@ -117,14 +117,16 @@ struct GetCommandBehaviorTests {
   func runOutputsOnlyPasswordWhenValueOnlyEnabled() throws {
     let item = fixtureItem(password: "value-only-secret")
     let capturedOutput = SendableBox("")
+    let capturedQueries = SendableBox<[KeychainQuery]>([])
     var command = GetCommand(
       service: "example.com",
       account: "bot@example.com",
       format: .table,
       clipboard: false,
       valueOnly: true,
-      getPassword: { _ in
-        item
+      getPassword: { query in
+        capturedQueries.value.append(query)
+        return item
       },
       formatOutput: { _, _, _ in
         Issue.record("Formatter should not be used for --value-only.")
@@ -140,6 +142,53 @@ struct GetCommandBehaviorTests {
 
     try command.run()
     #expect(capturedOutput.value == "value-only-secret")
+    #expect(capturedQueries.value.map(\.itemClass) == [.internetPassword])
+  }
+
+  @Test("run falls back to generic-password query when internet-password is not found")
+  func runFallsBackToGenericPasswordWhenInternetPasswordIsMissing() throws {
+    let capturedOutput = SendableBox("")
+    let capturedQueries = SendableBox<[KeychainQuery]>([])
+    let genericItem = KeychainItem(
+      service: "example.com",
+      account: "bot@example.com",
+      password: "generic-secret",
+      label: "CLI Bot",
+      creationDate: nil,
+      modificationDate: nil,
+      isShared: false,
+      sharedGroupName: nil,
+      itemClass: .genericPassword
+    )
+    var command = GetCommand(
+      service: "example.com",
+      account: "bot@example.com",
+      format: .plain,
+      clipboard: false,
+      valueOnly: true,
+      getPassword: { query in
+        capturedQueries.value.append(query)
+        if query.itemClass == .internetPassword {
+          throw KeychainError.itemNotFound
+        }
+        return genericItem
+      },
+      formatOutput: { _, _, _ in
+        Issue.record("Formatter should not be used for --value-only.")
+        return ""
+      },
+      output: { message in
+        capturedOutput.value = message
+      },
+      copyToClipboard: { _ in
+        Issue.record("Clipboard path should not be used.")
+      }
+    )
+
+    try command.run()
+
+    #expect(capturedQueries.value.map(\.itemClass) == [.internetPassword, .genericPassword])
+    #expect(capturedOutput.value == "generic-secret")
   }
 
   @Test("run copies password to clipboard when clipboard flag is enabled")

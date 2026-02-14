@@ -109,24 +109,40 @@ struct GetCommand: ParsableCommand {
   mutating func run() throws {
     let service = try requiredValue(service, option: "--service")
     let account = try requiredValue(account, option: "--account")
-    let query = KeychainQuery(
+    let baseQuery = KeychainQuery(
       service: service,
       account: account,
       domain: nil,
       includeShared: true,
-      itemClass: .genericPassword,
+      itemClass: .internetPassword,
       limit: 1
     )
+    let itemClasses: [ItemClass] = [.internetPassword, .genericPassword]
 
-    let item: KeychainItem
-    do {
-      item = try getPassword(query)
-    } catch let error as KeychainError {
+    var item: KeychainItem?
+    for itemClass in itemClasses {
+      do {
+        var query = baseQuery
+        query.itemClass = itemClass
+        item = try getPassword(query)
+        break
+      } catch let error as KeychainError {
+        if error == .itemNotFound {
+          continue
+        }
+
+        throw GetCommandError.keychainMessage(
+          error.errorDescription ?? "Failed to retrieve password."
+        )
+      } catch {
+        throw GetCommandError.keychainMessage("Failed to retrieve password.")
+      }
+    }
+
+    guard let item else {
       throw GetCommandError.keychainMessage(
-        error.errorDescription ?? "Failed to retrieve password."
+        KeychainError.itemNotFound.errorDescription ?? "Failed to retrieve password."
       )
-    } catch {
-      throw GetCommandError.keychainMessage("Failed to retrieve password.")
     }
 
     if clipboard {
