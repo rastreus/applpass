@@ -75,7 +75,7 @@
       "dependencies": [
         "S03-keychain-manager"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S05-keychain-list",

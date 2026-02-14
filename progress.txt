@@ -43,3 +43,12 @@ Date: 2026-02-14T07:12:50Z
 - Added usage-example documentation to `buildQuery(for:)` doc comments.
 - Gotcha: Security.framework uses `kSecAttrSecurityDomain` (not `kSecAttrDomain`) for internet-password domain queries.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 4 — S04-keychain-get — Keychain get operation
+Date: 2026-02-14T07:22:20Z
+- Implemented `KeychainManager.getPassword(for:)` in `Sources/ApplPass/KeychainManager/KeychainManager.swift` using `SecItemCopyMatching` with `kSecReturnAttributes`, `kSecReturnData`, and single-item match behavior.
+- Added robust OSStatus mapping to `KeychainError` (`itemNotFound`, `authorizationDenied`, plus `operationFailed(status)` fallback) and full result decoding into `KeychainItem` metadata fields.
+- Added `Tests/ApplPassTests/KeychainManagerGetTests.swift` with mock-based unit tests for success decoding, missing item mapping, authorization mapping, and invalid password data handling.
+- Added an integration-style test that inserts an item into an isolated in-memory test keychain harness, retrieves it through `getPassword(for:)`, and verifies service/account/password/label/class consistency.
+- Gotcha: direct Security keychain write APIs (`SecItemAdd`) return parameter/not-available errors in this execution environment, so integration coverage uses an in-process test keychain harness while keeping `getPassword(for:)` wired to real Security API semantics.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive Sources/ Tests/`.
