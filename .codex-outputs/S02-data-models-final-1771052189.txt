@@ -1,0 +1,48 @@
+### TCR Plan
+1. Add `ItemClass` model with docs and `Sendable/Equatable/Codable`.
+2. Add `KeychainItem` with full design metadata fields and docs.
+3. Add `KeychainQuery` with optional filters/defaults and docs.
+4. Add `KeychainError` with required cases + `LocalizedError`.
+5. Add tests for `Sendable` conformance and `Codable` round-trip.
+6. Run full verification, then update tracking files (`prd.json`, `progress.txt`).
+
+### Implementation
+1. Added `ItemClass` in `Sources/ApplPass/KeychainManager/ItemClass.swift`.  
+   Verification: `swift build --disable-sandbox` + `swift test --disable-sandbox` passed.  
+   Decision: commit `68cb821d` (`feat(keychain): add ItemClass data model`).
+
+2. Added `KeychainItem` in `Sources/ApplPass/KeychainManager/KeychainItem.swift` with: `service`, `account`, `password`, `label`, `creationDate`, `modificationDate`, `isShared`, `sharedGroupName`, `itemClass`.  
+   Verification: build/test passed.  
+   Decision: commit `8cc565f7` (`feat(keychain): add KeychainItem model`).
+
+3. Added `KeychainQuery` in `Sources/ApplPass/KeychainManager/KeychainQuery.swift` with optional filters and defaults: `service`, `account`, `domain`, `includeShared`, `itemClass`, `limit`.  
+   Verification: build/test passed.  
+   Decision: commit `997383c4` (`feat(keychain): add KeychainQuery model`).
+
+4. Added `KeychainError` in `Sources/ApplPass/KeychainManager/KeychainError.swift` with required cases: `itemNotFound`, `duplicateItem`, `unexpectedPasswordData`, `authorizationDenied`, `invalidParameter(String)` and `LocalizedError` descriptions.  
+   Verification: build/test passed.  
+   Decision: commit `a7657633` (`feat(keychain): add KeychainError definitions`).
+
+5. Added `Tests/ApplPassTests/KeychainModelsTests.swift` sendable conformance checks.  
+   Verification: build/test passed.  
+   Decision: commit `f5d110e7` (`test(keychain): add sendable conformance tests`).
+
+6. Extended `Tests/ApplPassTests/KeychainModelsTests.swift` with Codable round-trip tests for `KeychainItem` and `KeychainQuery`, plus `KeychainError` description coverage.  
+   Verification: build/test passed.  
+   Decision: commit `bf108767` (`test(keychain): add codable round-trip coverage`).
+
+No TCR reverts were needed.
+
+### Verification
+1. `swift build --disable-sandbox`: passed.
+2. `swift build -c release --disable-sandbox`: passed.
+3. `swift test --disable-sandbox --verbose`: passed (`6` tests, `0` failures).
+4. `swift format lint --recursive Sources/ Tests/`: passed.
+
+Note: SwiftPM emitted cache/sandbox warnings in this environment, but all verification commands completed successfully.
+
+### Completion
+1. Updated `prd.json` to set `S02-data-models` `"passes": true`.
+2. Appended Iteration 2 entry to `progress.txt` (including implementation summary and environment gotcha).
+3. Committed tracking updates as `603f4f0d` with message `chore(ralph): complete story S02-data-models`.
+4. Working copy is clean at `bc88e390` (empty working commit).
