@@ -7,9 +7,15 @@ let package = Package(
   products: [
     .executable(name: "applpass", targets: ["ApplPass"]),
   ],
+  dependencies: [
+    .package(path: "Vendor/swift-argument-parser"),
+  ],
   targets: [
     .executableTarget(
       name: "ApplPass",
+      dependencies: [
+        .product(name: "ArgumentParser", package: "swift-argument-parser"),
+      ],
       swiftSettings: [
         .enableUpcomingFeature("StrictConcurrency"),
       ]

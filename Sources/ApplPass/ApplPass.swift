@@ -1,14 +1,11 @@
+import ArgumentParser
+
 @main
-struct ApplPass {
+struct ApplPass: ParsableCommand {
   static let version = "0.1.0"
 
-  static func main() {
-    let arguments = CommandLine.arguments.dropFirst()
-    if arguments.contains("--version") {
-      print(version)
-      return
-    }
-
-    print("applpass \(version)")
-  }
+  static let configuration = CommandConfiguration(
+    abstract: "CLI for managing passwords in macOS Keychain",
+    version: version
+  )
 }
