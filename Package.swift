@@ -5,7 +5,7 @@ let package = Package(
   name: "applpass",
   platforms: [.macOS(.v14)],
   products: [
-    .executable(name: "applpass", targets: ["ApplPass"]),
+    .executable(name: "applpass", targets: ["ApplPass"])
   ],
   dependencies: [
     .package(path: "Vendor/swift-argument-parser"),
@@ -19,7 +19,7 @@ let package = Package(
         .product(name: "SwiftFormat", package: "swift-format"),
       ],
       swiftSettings: [
-        .enableUpcomingFeature("StrictConcurrency"),
+        .enableUpcomingFeature("StrictConcurrency")
       ]
     ),
     .testTarget(

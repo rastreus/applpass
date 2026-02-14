@@ -4,10 +4,10 @@ import PackageDescription
 let package = Package(
   name: "swift-argument-parser",
   products: [
-    .library(name: "ArgumentParser", targets: ["ArgumentParser"]),
+    .library(name: "ArgumentParser", targets: ["ArgumentParser"])
   ],
   targets: [
-    .target(name: "ArgumentParser"),
+    .target(name: "ArgumentParser")
   ],
   swiftLanguageModes: [.v6]
 )

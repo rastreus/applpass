@@ -19,14 +19,14 @@ public protocol ParsableCommand {
   mutating func run() throws
 }
 
-public extension ParsableCommand {
-  static var configuration: CommandConfiguration {
+extension ParsableCommand {
+  public static var configuration: CommandConfiguration {
     CommandConfiguration()
   }
 
-  mutating func run() throws {}
+  public mutating func run() throws {}
 
-  static func main() {
+  public static func main() {
     var command = Self.init()
     let arguments = CommandLine.arguments.dropFirst()
 

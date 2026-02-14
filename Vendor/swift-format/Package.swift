@@ -4,10 +4,10 @@ import PackageDescription
 let package = Package(
   name: "swift-format",
   products: [
-    .library(name: "SwiftFormat", targets: ["SwiftFormat"]),
+    .library(name: "SwiftFormat", targets: ["SwiftFormat"])
   ],
   targets: [
-    .target(name: "SwiftFormat"),
+    .target(name: "SwiftFormat")
   ],
   swiftLanguageModes: [.v6]
 )
