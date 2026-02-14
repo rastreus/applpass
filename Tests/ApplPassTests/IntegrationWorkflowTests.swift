@@ -156,6 +156,118 @@ struct IntegrationWorkflowTests {
     let lines = listOutput.value.split(separator: "\n").map(String.init)
     #expect(lines == ["\(service)\t\(account)"])
   }
+
+  @Test("add then update then get returns updated password")
+  func addThenUpdateThenGetReturnsUpdatedPassword() throws {
+    let fixture = IntegrationFixture()
+    defer {
+      for status in fixture.teardownStatuses() {
+        #expect([errSecSuccess, errSecItemNotFound].contains(status))
+      }
+    }
+
+    let service = fixture.makeUniqueService("add-update-get")
+    let account = fixture.makeUniqueAccount()
+    let originalPassword = "original-\(UUID().uuidString)"
+    let updatedPassword = "updated-\(UUID().uuidString)"
+    fixture.trackForCleanup(service: service, account: account)
+
+    var addCommand = AddCommand(
+      service: service,
+      account: account,
+      label: "Workflow Add/Update/Get",
+      stdin: false,
+      generate: false,
+      sync: false,
+      length: 32,
+      addPassword: { service, account, password, label, sync in
+        try fixture.manager.addPassword(
+          service: service,
+          account: account,
+          password: password,
+          label: label,
+          sync: sync
+        )
+      },
+      generatePassword: { _ in
+        Issue.record("Password generation should not be used in this workflow test.")
+        return ""
+      },
+      readStdinLine: {
+        Issue.record("stdin input should not be used in this workflow test.")
+        return nil
+      },
+      promptPassword: {
+        originalPassword
+      },
+      output: { _ in
+      }
+    )
+
+    try addCommand.run()
+
+    let updateOutput = SendableBox("")
+    var updateCommand = UpdateCommand(
+      service: service,
+      account: account,
+      stdin: false,
+      generate: false,
+      force: true,
+      length: 32,
+      updatePassword: { query, password in
+        try fixture.manager.updatePassword(for: query, newPassword: password)
+      },
+      generatePassword: { _ in
+        Issue.record("Password generation should not be used in this workflow test.")
+        return ""
+      },
+      readStdinLine: {
+        Issue.record("stdin input should not be used in this workflow test.")
+        return nil
+      },
+      promptPassword: {
+        updatedPassword
+      },
+      confirmUpdate: { _, _ in
+        Issue.record("Confirmation should be bypassed when --force is used.")
+        return false
+      },
+      output: { message in
+        updateOutput.value = message
+      }
+    )
+
+    try updateCommand.run()
+    #expect(
+      updateOutput.value
+        == "Updated password for service '\(service)' and account '\(account)'."
+    )
+
+    let getOutput = SendableBox("")
+    var getCommand = GetCommand(
+      service: service,
+      account: account,
+      format: .plain,
+      clipboard: false,
+      valueOnly: true,
+      getPassword: { query in
+        try fixture.manager.getPassword(for: query)
+      },
+      formatOutput: { items, style, showPasswords in
+        OutputFormatter.format(items, style: style, showPasswords: showPasswords)
+      },
+      output: { message in
+        getOutput.value = message
+      },
+      copyToClipboard: { _ in
+        Issue.record("Clipboard should not be used in this workflow test.")
+      }
+    )
+
+    try getCommand.run()
+    #expect(getOutput.value == updatedPassword)
+    #expect(getOutput.value != originalPassword)
+  }
 }
 
 private final class IntegrationFixture: @unchecked Sendable {
@@ -309,9 +421,28 @@ private final class IntegrationTestKeychain: @unchecked Sendable {
     _ query: CFDictionary,
     _ attributesToUpdate: CFDictionary
   ) -> OSStatus {
-    _ = query
-    _ = attributesToUpdate
-    return errSecUnimplemented
+    let queryDictionary = query as NSDictionary
+    let itemClass = queryDictionary[kSecClass as String] as? String
+    let service = queryDictionary[kSecAttrService as String] as? String
+    let account = queryDictionary[kSecAttrAccount as String] as? String
+
+    guard
+      let itemIndex = items.firstIndex(where: {
+        $0.itemClass == itemClass
+          && $0.service == service
+          && $0.account == account
+      })
+    else {
+      return errSecItemNotFound
+    }
+
+    let updateDictionary = attributesToUpdate as NSDictionary
+    guard let passwordData = updateDictionary[kSecValueData as String] as? Data else {
+      return errSecParam
+    }
+
+    items[itemIndex].passwordData = passwordData
+    return errSecSuccess
   }
 
   func delete(_ query: CFDictionary) -> OSStatus {
