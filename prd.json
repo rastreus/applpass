@@ -281,7 +281,7 @@
         "S07-keychain-update",
         "S09-password-generator"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S15-delete-command",
