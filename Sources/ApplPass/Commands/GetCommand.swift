@@ -1,4 +1,5 @@
 import ArgumentParser
+import Foundation
 
 /// Retrieves a single password item from keychain.
 struct GetCommand: ParsableCommand {
@@ -6,36 +7,40 @@ struct GetCommand: ParsableCommand {
     abstract: "Retrieve one password from keychain."
   )
 
+  @Option(name: .shortAndLong, help: "Service name")
   var service: String?
+
+  @Option(name: .shortAndLong, help: "Account name")
   var account: String?
-  var format: OutputStyle
-  var clipboard: Bool
-  var valueOnly: Bool
+
+  @Option(name: .shortAndLong, help: "Output format: table, json, csv, plain")
+  var format: OutputStyle = .plain
+
+  @Flag(name: .shortAndLong, help: "Copy password to clipboard using pbcopy.")
+  var clipboard = false
+
+  @Flag(name: [.customShort("v"), .long], help: "Output only the password value.")
+  var valueOnly = false
 
   typealias GetPasswordFunction = @Sendable (KeychainQuery) throws -> KeychainItem
   typealias FormatFunction = @Sendable ([KeychainItem], OutputStyle, Bool) -> String
   typealias OutputFunction = @Sendable (String) -> Void
+  typealias ClipboardFunction = @Sendable (String) throws -> Void
 
-  private var getPassword: GetPasswordFunction
-  private var formatOutput: FormatFunction
-  private var output: OutputFunction
-
-  init() {
-    self.service = nil
-    self.account = nil
-    self.format = .plain
-    self.clipboard = false
-    self.valueOnly = false
-    self.getPassword = { query in
-      try KeychainManager().getPassword(for: query)
-    }
-    self.formatOutput = { items, style, showPasswords in
-      OutputFormatter.format(items, style: style, showPasswords: showPasswords)
-    }
-    self.output = { message in
-      print(message)
-    }
+  private var getPassword: GetPasswordFunction = { query in
+    try KeychainManager().getPassword(for: query)
   }
+  private var formatOutput: FormatFunction = { items, style, showPasswords in
+    OutputFormatter.format(items, style: style, showPasswords: showPasswords)
+  }
+  private var output: OutputFunction = { message in
+    print(message)
+  }
+  private var copyToClipboard: ClipboardFunction = { value in
+    try Self.copyWithPbcopy(value)
+  }
+
+  init() {}
 
   init(
     service: String?,
@@ -45,8 +50,10 @@ struct GetCommand: ParsableCommand {
     valueOnly: Bool = false,
     getPassword: @escaping GetPasswordFunction,
     formatOutput: @escaping FormatFunction,
-    output: @escaping OutputFunction
+    output: @escaping OutputFunction,
+    copyToClipboard: @escaping ClipboardFunction
   ) {
+    self.init()
     self.service = service
     self.account = account
     self.format = format
@@ -55,6 +62,7 @@ struct GetCommand: ParsableCommand {
     self.getPassword = getPassword
     self.formatOutput = formatOutput
     self.output = output
+    self.copyToClipboard = copyToClipboard
   }
 
   static func parse(arguments: [String]) throws -> GetCommand {
@@ -117,9 +125,22 @@ struct GetCommand: ParsableCommand {
       throw GetCommandError.keychainMessage(
         error.errorDescription ?? "Failed to retrieve password."
       )
+    } catch {
+      throw GetCommandError.keychainMessage("Failed to retrieve password.")
     }
 
-    if valueOnly || clipboard {
+    if clipboard {
+      do {
+        try copyToClipboard(item.password)
+      } catch {
+        throw GetCommandError.clipboardFailed
+      }
+
+      output("Password copied to clipboard.")
+      return
+    }
+
+    if valueOnly {
       output(item.password)
       return
     }
@@ -170,6 +191,33 @@ struct GetCommand: ParsableCommand {
 
     return trimmed
   }
+
+  private static func copyWithPbcopy(_ value: String) throws {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/pbcopy")
+    let inputPipe = Pipe()
+    process.standardInput = inputPipe
+
+    do {
+      try process.run()
+    } catch {
+      throw GetCommandError.clipboardFailed
+    }
+
+    guard let data = value.data(using: .utf8) else {
+      inputPipe.fileHandleForWriting.closeFile()
+      process.terminate()
+      throw GetCommandError.clipboardFailed
+    }
+
+    inputPipe.fileHandleForWriting.write(data)
+    inputPipe.fileHandleForWriting.closeFile()
+    process.waitUntilExit()
+
+    guard process.terminationStatus == 0 else {
+      throw GetCommandError.clipboardFailed
+    }
+  }
 }
 
 enum GetCommandError: Error, Sendable, Equatable, CustomStringConvertible {
@@ -178,6 +226,7 @@ enum GetCommandError: Error, Sendable, Equatable, CustomStringConvertible {
   case invalidOptionValue(option: String, value: String)
   case unknownArgument(String)
   case keychainMessage(String)
+  case clipboardFailed
 
   var description: String {
     switch self {
@@ -191,6 +240,8 @@ enum GetCommandError: Error, Sendable, Equatable, CustomStringConvertible {
       return "Unknown argument: \(argument)."
     case .keychainMessage(let message):
       return message
+    case .clipboardFailed:
+      return "Failed to copy password to clipboard."
     }
   }
 }
