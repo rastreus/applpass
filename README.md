@@ -54,3 +54,37 @@ applpass get --service github.com --account bot@example.com --value-only
 
 Use `applpass <command> [options]` and run `applpass <command> --help` for
 command-specific options and examples.
+
+## Command Reference
+
+### `get`
+
+Retrieve one keychain password by service and account.
+
+```bash
+applpass get --service github.com --account bot@example.com
+applpass get -s github.com -a bot@example.com --value-only
+applpass get -s github.com -a bot@example.com --clipboard
+```
+
+Key options:
+- `--service`, `--account` (required)
+- `--format table|json|csv|plain` (default: `plain`)
+- `--value-only` to print only the password
+- `--clipboard` to copy the password with `pbcopy`
+
+### `list`
+
+List keychain items with optional filtering and multiple output formats.
+
+```bash
+applpass list
+applpass list --service github.com --format table
+applpass list --search github --shared-only --format json
+```
+
+Key options:
+- `--service`, `--account`, `--search`
+- `--format table|json|csv|plain` (default: `table`)
+- `--shared-only`, `--personal-only`
+- `--show-passwords` to include password values in output
