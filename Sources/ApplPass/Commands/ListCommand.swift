@@ -121,18 +121,23 @@ struct ListCommand: ParsableCommand {
   }
 
   mutating func run() throws {
-    let query = KeychainQuery(
+    let baseQuery = KeychainQuery(
       service: Self.normalizedValue(service),
       account: Self.normalizedValue(account),
       domain: nil,
       includeShared: !personalOnly,
-      itemClass: .genericPassword,
+      itemClass: .internetPassword,
       limit: 100
     )
 
-    let items: [KeychainItem]
+    let itemClasses: [ItemClass] = [.internetPassword, .genericPassword]
+    var items: [KeychainItem] = []
     do {
-      items = try listPasswords(query, showPasswords)
+      for itemClass in itemClasses {
+        var query = baseQuery
+        query.itemClass = itemClass
+        items.append(contentsOf: try listPasswords(query, showPasswords))
+      }
     } catch let error as KeychainError {
       throw ListCommandError.keychainMessage(
         error.errorDescription ?? "Failed to list passwords."

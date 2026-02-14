@@ -145,8 +145,8 @@ struct ListCommandFilteringTests {
 struct ListCommandBehaviorTests {
   @Test("run calls listPasswords and renders formatted output")
   func runCallsListAndRendersOutput() throws {
-    let capturedQuery = SendableBox<KeychainQuery?>(nil)
-    let capturedIncludePasswordData = SendableBox<Bool?>(nil)
+    let capturedQueries = SendableBox<[KeychainQuery]>([])
+    let capturedIncludePasswordData = SendableBox<[Bool]>([])
     let capturedOutput = SendableBox("")
     let capturedStyle = SendableBox<OutputStyle?>(nil)
     let capturedShowPasswords = SendableBox<Bool?>(nil)
@@ -162,9 +162,9 @@ struct ListCommandBehaviorTests {
       personalOnly: false,
       showPasswords: true,
       listPasswords: { query, includePasswordData in
-        capturedQuery.value = query
-        capturedIncludePasswordData.value = includePasswordData
-        return items
+        capturedQueries.value.append(query)
+        capturedIncludePasswordData.value.append(includePasswordData)
+        return query.itemClass == .internetPassword ? items : []
       },
       formatOutput: { passedItems, style, showPasswords in
         capturedStyle.value = style
@@ -179,11 +179,12 @@ struct ListCommandBehaviorTests {
 
     try command.run()
 
-    #expect(capturedQuery.value?.service == "example.com")
-    #expect(capturedQuery.value?.account == "bot@example.com")
-    #expect(capturedQuery.value?.includeShared == true)
-    #expect(capturedQuery.value?.itemClass == .genericPassword)
-    #expect(capturedIncludePasswordData.value == true)
+    #expect(capturedQueries.value.count == 2)
+    #expect(capturedQueries.value.map(\.itemClass) == [.internetPassword, .genericPassword])
+    #expect(capturedQueries.value.map(\.service) == ["example.com", "example.com"])
+    #expect(capturedQueries.value.map(\.account) == ["bot@example.com", "bot@example.com"])
+    #expect(capturedQueries.value.allSatisfy { $0.includeShared })
+    #expect(capturedIncludePasswordData.value == [true, true])
     #expect(capturedStyle.value == .json)
     #expect(capturedShowPasswords.value == true)
     #expect(capturedOutput.value == "formatted-output")
@@ -191,8 +192,8 @@ struct ListCommandBehaviorTests {
 
   @Test("run disables shared lookup when personalOnly is enabled")
   func runDisablesSharedLookupWhenPersonalOnlyEnabled() throws {
-    let capturedQuery = SendableBox<KeychainQuery?>(nil)
-    let capturedIncludePasswordData = SendableBox<Bool?>(nil)
+    let capturedQueries = SendableBox<[KeychainQuery]>([])
+    let capturedIncludePasswordData = SendableBox<[Bool]>([])
     var command = ListCommand(
       service: nil,
       account: nil,
@@ -202,9 +203,9 @@ struct ListCommandBehaviorTests {
       personalOnly: true,
       showPasswords: false,
       listPasswords: { query, includePasswordData in
-        capturedQuery.value = query
-        capturedIncludePasswordData.value = includePasswordData
-        return [listFixtureItem(isShared: false)]
+        capturedQueries.value.append(query)
+        capturedIncludePasswordData.value.append(includePasswordData)
+        return []
       },
       formatOutput: { _, _, _ in
         ""
@@ -214,8 +215,10 @@ struct ListCommandBehaviorTests {
     )
 
     try command.run()
-    #expect(capturedQuery.value?.includeShared == false)
-    #expect(capturedIncludePasswordData.value == false)
+    #expect(capturedQueries.value.count == 2)
+    #expect(capturedQueries.value.map(\.itemClass) == [.internetPassword, .genericPassword])
+    #expect(capturedQueries.value.allSatisfy { !$0.includeShared })
+    #expect(capturedIncludePasswordData.value == [false, false])
   }
 
   @Test("run maps keychain errors to user-friendly messages")
