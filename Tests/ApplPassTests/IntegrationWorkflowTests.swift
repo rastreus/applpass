@@ -460,6 +460,101 @@ struct IntegrationWorkflowTests {
       try duplicateAddCommand.run()
     }
   }
+
+  @Test("shared-password item is returned by shared-only listing")
+  func sharedPasswordItemIsReturnedBySharedOnlyListing() throws {
+    let fixture = IntegrationFixture()
+    defer {
+      for status in fixture.teardownStatuses() {
+        #expect([errSecSuccess, errSecItemNotFound].contains(status))
+      }
+    }
+
+    let service = fixture.makeUniqueService("shared-list")
+    let account = fixture.makeUniqueAccount()
+    let password = "secret-\(UUID().uuidString)"
+    fixture.trackForCleanup(service: service, account: account)
+
+    var addCommand = AddCommand(
+      service: service,
+      account: account,
+      label: "Workflow Shared Access",
+      stdin: false,
+      generate: false,
+      sync: true,
+      length: 32,
+      addPassword: { service, account, password, label, sync in
+        try fixture.manager.addPassword(
+          service: service,
+          account: account,
+          password: password,
+          label: label,
+          sync: sync
+        )
+      },
+      generatePassword: { _ in
+        Issue.record("Password generation should not be used in this workflow test.")
+        return ""
+      },
+      readStdinLine: {
+        Issue.record("stdin input should not be used in this workflow test.")
+        return nil
+      },
+      promptPassword: {
+        password
+      },
+      output: { _ in
+      }
+    )
+
+    try addCommand.run()
+
+    let sharedListOutput = SendableBox("")
+    var sharedListCommand = ListCommand(
+      service: service,
+      account: nil,
+      search: nil,
+      format: .plain,
+      sharedOnly: true,
+      personalOnly: false,
+      showPasswords: false,
+      listPasswords: { query in
+        try fixture.manager.listPasswords(matching: query)
+      },
+      formatOutput: { items, style, showPasswords in
+        OutputFormatter.format(items, style: style, showPasswords: showPasswords)
+      },
+      output: { message in
+        sharedListOutput.value = message
+      }
+    )
+
+    try sharedListCommand.run()
+    #expect(sharedListOutput.value == "\(service)\t\(account)")
+
+    let personalListOutput = SendableBox("")
+    var personalListCommand = ListCommand(
+      service: service,
+      account: nil,
+      search: nil,
+      format: .plain,
+      sharedOnly: false,
+      personalOnly: true,
+      showPasswords: false,
+      listPasswords: { query in
+        try fixture.manager.listPasswords(matching: query)
+      },
+      formatOutput: { items, style, showPasswords in
+        OutputFormatter.format(items, style: style, showPasswords: showPasswords)
+      },
+      output: { message in
+        personalListOutput.value = message
+      }
+    )
+
+    try personalListCommand.run()
+    #expect(personalListOutput.value.isEmpty)
+  }
 }
 
 private final class IntegrationFixture: @unchecked Sendable {
