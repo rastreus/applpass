@@ -1,0 +1,75 @@
+### TCR Plan
+1. Add `get` command dispatch from root CLI.
+2. Implement `GetCommand` parsing and execution path.
+3. Add `format`/`valueOnly`/`clipboard` output behavior.
+4. Add user-friendly error mapping.
+5. Add command parsing tests.
+6. Add command behavior tests.
+7. Add add->get integration test.
+8. Run full verification and complete tracking files.
+
+### Implementation
+1. **Cycle 1 (reverted)**  
+Changed: attempted upstream `swift-argument-parser` API usage (`subcommands`, `@Option`, `@Flag`, `CleanExit`).  
+Result: build failed because vendored parser is minimal and lacks those APIs.  
+Decision: `jj restore`.
+
+2. **Cycle 2 (committed)**  
+Changed:
+- Added root subcommand dispatch in `Sources/ApplPass/ApplPass.swift`.
+- Added explicit parse/run flow in `Sources/ApplPass/Commands/GetCommand.swift`.
+Result: `swift build --disable-sandbox && swift test --disable-sandbox` passed.  
+Decision: commit `6b54ba97` (`feat(commands): add get command parsing and dispatch`).
+
+3. **Cycle 3 (reverted)**  
+Changed: first attempt to add custom `@Option/@Flag` wrappers and clipboard copy support.  
+Result: build failed (wrapper initialization/type issues).  
+Decision: `jj restore`.
+
+4. **Cycle 4 (committed)**  
+Changed:
+- Added metadata wrappers in `Sources/ApplPass/Commands/CommandArguments.swift`.
+- Reworked `Sources/ApplPass/Commands/GetCommand.swift`:
+  - `@Option` properties: `service`, `account`, `format`
+  - `@Flag` properties: `clipboard`, `valueOnly`
+  - explicit arg parsing
+  - `OutputFormatter` path
+  - `valueOnly` path
+  - real clipboard copy via `/usr/bin/pbcopy`
+  - user-friendly typed errors
+Result: build/tests passed.  
+Decision: commit `5113c10e` (`feat(commands): add get command option annotations and clipboard support`).
+
+5. **Cycle 5 (reverted)**  
+Changed: added `Tests/ApplPassTests/GetCommandTests.swift` and switched get query to generic-password for add->get integration compatibility.  
+Result: test compile failed under Swift 6 Sendable closure capture rules.  
+Decision: `jj restore`.
+
+6. **Cycle 6 (committed)**  
+Changed:
+- Re-added `Tests/ApplPassTests/GetCommandTests.swift` with Sendable-safe capture boxes.
+- Added parsing tests, behavior tests, and serialized integration test.
+- Updated get query class to `.genericPassword` in `Sources/ApplPass/Commands/GetCommand.swift` so add->get integration matches current keychain add behavior.
+Result: build/tests passed (62 tests).  
+Decision: commit `c31e9826` (`test(commands): add get command parsing and behavior coverage`).
+
+7. **Completion commit**  
+Changed:
+- `prd.json` (`S11-get-command.passes = true`)
+- `progress.txt` (Iteration 11 entry appended)  
+Decision: commit `d674d774` (`chore(ralph): complete story S11-get-command`).
+
+### Verification
+Executed and passed:
+1. `swift build --disable-sandbox`
+2. `swift build -c release --disable-sandbox`
+3. `swift test --disable-sandbox --verbose` (62 tests passed)
+4. `swift format lint --recursive .`
+
+Note: SwiftPM emitted sandbox/cache warnings in this environment, but all required verification commands succeeded.
+
+### Completion
+1. Story marked complete in `prd.json`.
+2. Iteration summary appended to `progress.txt`.
+3. Tracking files committed with `chore(ralph): complete story S11-get-command`.
+4. Working copy is clean (`jj st`).
