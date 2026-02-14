@@ -307,7 +307,9 @@ struct KeychainManager: Sendable {
 
     dictionary[kSecReturnAttributes as String] = kCFBooleanTrue
     dictionary[kSecReturnData as String] = kCFBooleanTrue
-    dictionary[kSecMatchLimit as String] = kSecMatchLimitAll
+    // Keep the caller-provided numeric limit from buildQuery.
+    // For password items, forcing kSecMatchLimitAll while requesting data can be
+    // rejected by Security.framework with errSecParam.
 
     return dictionary
   }

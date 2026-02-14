@@ -390,7 +390,7 @@ private final class ListCommandTestKeychain: @unchecked Sendable {
       ?? dictionary[kSecAttrServer as String] as? String
     let account = dictionary[kSecAttrAccount as String] as? String
     let synchronizable = dictionary[kSecAttrSynchronizable as String]
-    let matchLimit = dictionary[kSecMatchLimit as String] as? String
+    let matchLimit = dictionary[kSecMatchLimit as String]
 
     let matches = items.filter { item in
       guard item[kSecClass as String] as? String == itemClass else {
@@ -416,12 +416,28 @@ private final class ListCommandTestKeychain: @unchecked Sendable {
       return errSecItemNotFound
     }
 
-    if matchLimit == (kSecMatchLimitAll as String) {
+    if Self.isMultiResultMatchLimit(matchLimit) {
       result?.pointee = matches as CFArray
     } else {
       result?.pointee = matches[0] as CFDictionary
     }
 
     return errSecSuccess
+  }
+
+  private static func isMultiResultMatchLimit(_ matchLimit: Any?) -> Bool {
+    if let string = matchLimit as? String {
+      return string == (kSecMatchLimitAll as String)
+    }
+
+    if let number = matchLimit as? NSNumber {
+      return number.intValue > 1
+    }
+
+    if let integer = matchLimit as? Int {
+      return integer > 1
+    }
+
+    return false
   }
 }

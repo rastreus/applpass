@@ -447,8 +447,8 @@ private final class DeleteCommandTestKeychain: @unchecked Sendable {
       return errSecItemNotFound
     }
 
-    let matchLimit = dictionary[kSecMatchLimit as String] as? String
-    if matchLimit == kSecMatchLimitAll as String {
+    let matchLimit = dictionary[kSecMatchLimit as String]
+    if Self.isMultiResultMatchLimit(matchLimit) {
       result?.pointee = matches as CFArray
       return errSecSuccess
     }
@@ -482,5 +482,21 @@ private final class DeleteCommandTestKeychain: @unchecked Sendable {
     }
 
     return errSecSuccess
+  }
+
+  private static func isMultiResultMatchLimit(_ matchLimit: Any?) -> Bool {
+    if let string = matchLimit as? String {
+      return string == (kSecMatchLimitAll as String)
+    }
+
+    if let number = matchLimit as? NSNumber {
+      return number.intValue > 1
+    }
+
+    if let integer = matchLimit as? Int {
+      return integer > 1
+    }
+
+    return false
   }
 }

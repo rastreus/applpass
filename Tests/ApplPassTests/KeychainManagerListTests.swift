@@ -23,15 +23,15 @@ struct KeychainManagerListTests {
     #expect(items.isEmpty)
   }
 
-  @Test("listPasswords builds query with service/account filters and match-limit-all")
-  func listPasswordsBuildsFilteredQueryWithMatchLimitAll() throws {
+  @Test("listPasswords builds query with service/account filters and numeric match limit")
+  func listPasswordsBuildsFilteredQueryWithNumericMatchLimit() throws {
     let manager = KeychainManager { query, _ in
       let dictionary = query as NSDictionary
 
       #expect(dictionary[kSecClass as String] as? String == kSecClassGenericPassword as String)
       #expect(dictionary[kSecAttrService as String] as? String == "cli-tool")
       #expect(dictionary[kSecAttrAccount as String] as? String == "bot@example.com")
-      #expect(dictionary[kSecMatchLimit as String] as? String == kSecMatchLimitAll as String)
+      #expect((dictionary[kSecMatchLimit as String] as? NSNumber)?.intValue == 100)
       #expect(
         (dictionary[kSecReturnAttributes as String] as? NSNumber)?.boolValue == true
       )
@@ -46,7 +46,7 @@ struct KeychainManagerListTests {
       domain: nil,
       includeShared: false,
       itemClass: .genericPassword,
-      limit: 1
+      limit: 100
     )
 
     let items = try manager.listPasswords(matching: query)
