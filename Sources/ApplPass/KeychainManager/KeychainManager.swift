@@ -62,7 +62,7 @@ struct KeychainManager: Sendable {
 
     switch status {
     case errSecSuccess:
-      return []
+      return try Self.decodeItems(from: result, fallbackQuery: query)
     case errSecItemNotFound:
       return []
     default:
@@ -244,6 +244,23 @@ struct KeychainManager: Sendable {
       sharedGroupName: attributes[kSecAttrAccessGroup as String] as? String,
       itemClass: itemClass
     )
+  }
+
+  private static func decodeItems(
+    from result: CFTypeRef?,
+    fallbackQuery: KeychainQuery
+  ) throws -> [KeychainItem] {
+    if let attributes = result as? [String: Any] {
+      return [try decodeItem(from: attributes, fallbackQuery: fallbackQuery)]
+    }
+
+    if let itemDictionaries = result as? [[String: Any]] {
+      return try itemDictionaries.map { item in
+        try decodeItem(from: item, fallbackQuery: fallbackQuery)
+      }
+    }
+
+    throw KeychainError.unexpectedPasswordData
   }
 
   private static func decodedRequiredString(

@@ -52,4 +52,39 @@ struct KeychainManagerListTests {
     let items = try manager.listPasswords(matching: query)
     #expect(items.isEmpty)
   }
+
+  @Test("listPasswords returns all decoded items when keychain returns multiple matches")
+  func listPasswordsDecodesMultipleMatches() throws {
+    let manager = KeychainManager { _, result in
+      let firstItem: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword as String,
+        kSecAttrService as String: "cli-tool",
+        kSecAttrAccount as String: "bot-one@example.com",
+        kSecValueData as String: Data("secret-one".utf8),
+        kSecAttrSynchronizable as String: false,
+      ]
+      let secondItem: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword as String,
+        kSecAttrService as String: "cli-tool",
+        kSecAttrAccount as String: "bot-two@example.com",
+        kSecValueData as String: Data("secret-two".utf8),
+        kSecAttrSynchronizable as String: false,
+      ]
+      result?.pointee = [firstItem, secondItem] as CFArray
+      return errSecSuccess
+    }
+    let query = KeychainQuery(
+      service: "cli-tool",
+      account: nil,
+      domain: nil,
+      includeShared: false,
+      itemClass: .genericPassword,
+      limit: 100
+    )
+
+    let items = try manager.listPasswords(matching: query)
+    #expect(items.count == 2)
+    #expect(items.map(\.account) == ["bot-one@example.com", "bot-two@example.com"])
+    #expect(items.map(\.password) == ["secret-one", "secret-two"])
+  }
 }
