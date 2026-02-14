@@ -1,4 +1,5 @@
 import ArgumentParser
+import Darwin
 import Foundation
 
 @main
@@ -9,6 +10,22 @@ struct ApplPass: ParsableCommand {
     abstract: "CLI for managing passwords in macOS Keychain",
     version: version
   )
+
+  static func main() {
+    if CommandLine.arguments.dropFirst().contains("--version") {
+      print(version)
+      Darwin.exit(0)
+    }
+
+    var command = Self.init()
+    do {
+      try command.run()
+      Darwin.exit(0)
+    } catch {
+      fputs("\(error)\n", stderr)
+      Darwin.exit(1)
+    }
+  }
 
   struct GlobalOptions: Sendable {
     @Flag(name: [.customShort("h"), .long], help: "Show help information.")
