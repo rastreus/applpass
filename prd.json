@@ -234,7 +234,7 @@
         "S05-keychain-list",
         "S10-output-formatter"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S13-add-command",

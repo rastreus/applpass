@@ -125,3 +125,16 @@ Date: 2026-02-14T08:15:28Z
 - Added `Tests/ApplPassTests/GetCommandTests.swift` covering argument parsing, formatted/value-only/clipboard behavior, keychain and clipboard error mapping, and serialized add->get integration output verification.
 - Gotcha: the vendored `swift-argument-parser` in this repo is intentionally minimal (no built-in `@Option/@Flag` parsing or subcommand config), so command parsing/dispatch is implemented explicitly while retaining option/flag property annotations.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+
+## Iteration 12 — S12-list-command — List command implementation
+Date: 2026-02-14T08:23:32Z
+- Added `Sources/ApplPass/Commands/ListCommand.swift` with `ListCommand` conforming to `ParsableCommand`, including `service`, `account`, `search`, and `format` options plus `sharedOnly`, `personalOnly`, and `showPasswords` flags.
+- Implemented explicit CLI argument parsing for `list` (`-s/--service`, `-a/--account`, `-q/--search`, `-f/--format`, `--shared-only`, `--personal-only`, `--show-passwords`, and `--key=value` forms) with typed parse errors.
+- Implemented command execution flow that calls `KeychainManager.listPasswords(matching:)`, applies shared/personal/search filtering, and renders output through `OutputFormatter` using the selected style and password visibility flag.
+- Added `ListCommand.filteredItems(_:search:sharedOnly:personalOnly:)` for deterministic filtering logic and case-insensitive substring search across service/account/shared group name.
+- Wired `list` subcommand dispatch in `Sources/ApplPass/ApplPass.swift` and updated available-command error messaging to include `list`.
+- Added `Tests/ApplPassTests/ListCommandTests.swift` coverage for parsing, filtering logic, run behavior, keychain error mapping, and integration with multiple items through a test keychain backend.
+- Updated `Tests/ApplPassTests/SmokeTests.swift` to validate updated command error messaging.
+- Gotcha: SwiftPM sandboxing is blocked in this environment, so all verification commands must use `--disable-sandbox`.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
