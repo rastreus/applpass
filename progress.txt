@@ -159,3 +159,14 @@ Date: 2026-02-14T08:47:13Z
 - Wired `update` subcommand dispatch in `Sources/ApplPass/ApplPass.swift` and updated `Tests/ApplPassTests/SmokeTests.swift` available-command messaging to include `update`.
 - Gotcha: interactive confirmation and interactive password entry both require a TTY; `--force` skips confirmation for non-interactive automation flows.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 15 — S15-delete-command — Delete command implementation
+Date: 2026-02-14T08:56:15Z
+- Added `Sources/ApplPass/Commands/DeleteCommand.swift` with `DeleteCommand` conforming to `ParsableCommand`, including `service`/`account` options and `force`/`allAccounts` flags.
+- Implemented explicit `delete` argument parsing for `-s/--service`, `-a/--account`, `--force`, `--all-accounts`, and `--key=value` forms with typed parse errors.
+- Implemented delete execution flow with required-option validation, preview output of targeted deletions, confirmation prompting (unless `--force`), single-account deletion, and `--all-accounts` service-wide deletion behavior.
+- Wired delete operations through `KeychainManager.deletePassword(for:)`, including per-account deletion loops for `--all-accounts` and keychain error mapping to user-facing messages.
+- Added `Tests/ApplPassTests/DeleteCommandTests.swift` coverage for parsing, confirmation cancellation flow, force bypass behavior, all-accounts multi-delete behavior, keychain error mapping, and serialized integration tests using a test keychain backend.
+- Wired `delete` subcommand dispatch in `Sources/ApplPass/ApplPass.swift` and updated `Tests/ApplPassTests/SmokeTests.swift` available-command messaging to include `delete`.
+- Gotcha: to satisfy "show what will be deleted" while still deleting multiple accounts safely, the command first lists matching service accounts, prints a deterministic account list, then deletes each account explicitly.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.

@@ -302,7 +302,7 @@
       "dependencies": [
         "S08-keychain-delete"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S16-generate-command",

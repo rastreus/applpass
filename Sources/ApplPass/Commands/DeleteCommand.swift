@@ -125,7 +125,9 @@ struct DeleteCommand: ParsableCommand {
     do {
       try deletePassword(Self.deletionQuery(service: service, account: account))
     } catch let error as KeychainError {
-      throw DeleteCommandError.keychainMessage(error.errorDescription ?? "Failed to delete password.")
+      throw DeleteCommandError.keychainMessage(
+        error.errorDescription ?? "Failed to delete password."
+      )
     } catch {
       throw DeleteCommandError.keychainMessage("Failed to delete password.")
     }
@@ -180,7 +182,9 @@ struct DeleteCommand: ParsableCommand {
         try deletePassword(Self.deletionQuery(service: service, account: account))
       }
     } catch let error as KeychainError {
-      throw DeleteCommandError.keychainMessage(error.errorDescription ?? "Failed to delete password.")
+      throw DeleteCommandError.keychainMessage(
+        error.errorDescription ?? "Failed to delete password."
+      )
     } catch {
       throw DeleteCommandError.keychainMessage("Failed to delete password.")
     }

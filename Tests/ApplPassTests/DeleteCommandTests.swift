@@ -166,7 +166,12 @@ struct DeleteCommandBehaviorTests {
 
     #expect(confirmationCalls.value == 0)
     #expect(deletedQueries.value.count == 2)
-    #expect(Set(deletedQueries.value.compactMap(\.account)) == ["first@example.com", "second@example.com"])
+    let deletedAccounts = Set(deletedQueries.value.compactMap(\.account))
+    let expectedAccounts: Set<String> = [
+      "first@example.com",
+      "second@example.com",
+    ]
+    #expect(deletedAccounts == expectedAccounts)
   }
 
   @Test("run maps keychain errors to user-friendly message")
@@ -189,7 +194,11 @@ struct DeleteCommandBehaviorTests {
       }
     )
 
-    #expect(throws: DeleteCommandError.keychainMessage("Access denied. Please allow access when prompted.")) {
+    #expect(
+      throws: DeleteCommandError.keychainMessage(
+        "Access denied. Please allow access when prompted."
+      )
+    ) {
       try command.run()
     }
   }
