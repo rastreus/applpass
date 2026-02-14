@@ -125,3 +125,45 @@ Key options:
 - `--stdin` or `--generate` (mutually exclusive)
 - `--length` for generated password size
 - `--force` to skip confirmation prompt
+
+### `delete`
+
+Delete one account password or all passwords for a service.
+
+```bash
+# delete a single account
+applpass delete --service github.com --account bot@example.com --force
+
+# show all accounts under a service, then delete them
+applpass delete --service github.com --all-accounts
+```
+
+Key options:
+- `--service` (required)
+- `--account` for single delete
+- `--all-accounts` for service-wide deletion
+- `--force` to skip confirmation prompt
+
+### `generate`
+
+Generate one or more passwords without storing them in keychain.
+
+```bash
+applpass generate --length 32
+applpass generate --count 3 --no-symbols
+applpass generate --length 40 --clipboard
+```
+
+Key options:
+- `--length` (default: `32`)
+- `--count` (default: `1`)
+- `--no-uppercase`, `--no-lowercase`, `--no-digits`, `--no-symbols`
+- `--clipboard` to copy generated output with `pbcopy`
+
+### Output Formats
+
+Commands that support `--format` accept:
+- `table` for human-readable columns
+- `json` for scripting and API workflows
+- `csv` for spreadsheet imports
+- `plain` for compact tab-separated output
