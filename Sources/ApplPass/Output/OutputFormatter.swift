@@ -141,7 +141,8 @@ struct OutputFormatter: Sendable {
 
   private static func escapedCSVField(_ field: String) -> String {
     let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
-    let requiresQuotes = escaped.contains(",") || escaped.contains("\"")
+    let requiresQuotes =
+      escaped.contains(",") || escaped.contains("\"")
       || escaped.contains("\n") || escaped.contains("\r")
     guard requiresQuotes else {
       return escaped
