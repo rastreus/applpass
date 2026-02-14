@@ -44,6 +44,19 @@ jobs:
           tar -C dist -czf "dist/applpass-${GITHUB_REF_NAME}-macos-arm64.tar.gz" applpass
           shasum -a 256 "dist/applpass-${GITHUB_REF_NAME}-macos-arm64.tar.gz" > "dist/applpass-${GITHUB_REF_NAME}-macos-arm64.sha256"
 
+      - name: Extract changelog entry
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          awk -v target="$version" '
+            $0 ~ "^## \\[" target "\\]" {capture=1; next}
+            capture && $0 ~ "^## \\[" {exit}
+            capture {print}
+          ' CHANGELOG.md > dist/release-notes.md
+
+          if [ ! -s dist/release-notes.md ]; then
+            printf "Release %s\n\nNo changelog entry found for version %s.\n" "$GITHUB_REF_NAME" "$version" > dist/release-notes.md
+          fi
+
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
@@ -55,6 +68,8 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          name: applpass ${{ github.ref_name }}
+          body_path: dist/release-notes.md
           files: |
             dist/applpass-${{ github.ref_name }}-macos-arm64.tar.gz
             dist/applpass-${{ github.ref_name }}-macos-arm64.sha256
