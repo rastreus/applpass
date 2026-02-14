@@ -322,7 +322,7 @@
       "dependencies": [
         "S09-password-generator"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S17-main-cli",

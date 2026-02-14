@@ -106,7 +106,12 @@ struct GenerateCommandBehaviorTests {
       noDigits: noDigits,
       noSymbols: noSymbols,
       clipboard: false,
-      generatePassword: { _, generatedSymbols, generatedUppercase, generatedLowercase, generatedDigits in
+      generatePassword: {
+        _,
+        generatedSymbols,
+        generatedUppercase,
+        generatedLowercase,
+        generatedDigits in
         capturedSettings.value = (
           generatedUppercase,
           generatedLowercase,
