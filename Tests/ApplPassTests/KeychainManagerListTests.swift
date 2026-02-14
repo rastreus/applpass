@@ -87,4 +87,28 @@ struct KeychainManagerListTests {
     #expect(items.map(\.account) == ["bot-one@example.com", "bot-two@example.com"])
     #expect(items.map(\.password) == ["secret-one", "secret-two"])
   }
+
+  @Test("listPasswords includes shared-password groups when includeShared is true")
+  func listPasswordsIncludesSharedGroupsWhenRequested() throws {
+    let manager = KeychainManager { query, _ in
+      let dictionary = query as NSDictionary
+      #expect(
+        dictionary[kSecAttrSynchronizable as String] as? String
+          == kSecAttrSynchronizableAny as String
+      )
+
+      return errSecItemNotFound
+    }
+    let query = KeychainQuery(
+      service: "accounts.example.com",
+      account: "bot@example.com",
+      domain: nil,
+      includeShared: true,
+      itemClass: .internetPassword,
+      limit: 100
+    )
+
+    let items = try manager.listPasswords(matching: query)
+    #expect(items.isEmpty)
+  }
 }
