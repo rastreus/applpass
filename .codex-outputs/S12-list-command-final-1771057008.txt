@@ -1,0 +1,51 @@
+### TCR Plan
+1. Add parsing tests for `ListCommand` options/flags and argument errors.
+2. Implement `ListCommand` parse/run scaffold to satisfy parsing tests.
+3. Add filtering/run behavior tests and multi-item integration coverage.
+4. Wire `list` into CLI dispatch and update command messaging.
+5. Run full verification suite.
+6. Mark story complete in tracking files and commit.
+
+### Implementation
+1. **Cycle 1**
+- Added `ListCommand` implementation in `Sources/ApplPass/Commands/ListCommand.swift:5` with:
+  - `@Option`: `service`, `account`, `search`, `format`
+  - `@Flag`: `sharedOnly`, `personalOnly`, `showPasswords`
+  - explicit parser (`parse(arguments:)`) and execution flow (`run()`)
+  - filtering helper `filteredItems(...)`
+  - typed `ListCommandError`
+- Added parsing tests in `Tests/ApplPassTests/ListCommandTests.swift:6`.
+- Verification: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Commit: `ed297ac9` (`feat(commands): add list command parser and baseline run flow`).
+
+2. **Cycle 2**
+- Expanded tests in `Tests/ApplPassTests/ListCommandTests.swift:67`:
+  - filtering logic unit tests (`sharedOnly`, `personalOnly`, substring `search`)
+  - behavior tests for run flow/output/error mapping
+  - integration test with multiple items via test keychain backend
+- Verification: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Commit: `435efc03` (`test(commands): add list command filtering and integration coverage`).
+
+3. **Cycle 3**
+- Wired `list` subcommand into `ApplPass.run()` in `Sources/ApplPass/ApplPass.swift:22`.
+- Updated available-command error text to include `list` in `Sources/ApplPass/ApplPass.swift:38`.
+- Added smoke coverage for updated messaging in `Tests/ApplPassTests/SmokeTests.swift:16`.
+- Verification: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Commit: `0ca6aea4` (`feat(cli): wire list command dispatch`).
+
+4. **Completion tracking**
+- Set story pass flag in `prd.json` (`S12-list-command` now `passes: true`).
+- Appended Iteration 12 summary to `progress.txt:130`.
+- Completion commit: `971717f4` (`chore(ralph): complete story S12-list-command`).
+
+### Verification
+Ran and passed:
+1. `swift build --disable-sandbox`
+2. `swift build -c release --disable-sandbox`
+3. `swift test --disable-sandbox --verbose` (76 tests, 21 suites passed)
+4. `swift format lint --recursive .`
+
+### Completion
+- Story `S12-list-command` is complete and marked passed.
+- Tracking files updated and committed.
+- Working copy is clean on top of the completion commit (`d1395e1e` empty working commit, parent `971717f4`).

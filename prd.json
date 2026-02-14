@@ -384,7 +384,8 @@
         "Build instructions for developers",
         "Contributing guidelines (code style, TCR workflow)",
         "License: MIT",
-        "Examples directory with sample usage scripts"
+        "Examples directory with sample usage scripts",
+        "Example SKILL.md with common command patterns for agents"
       ],
       "dependencies": [
         "S17-main-cli"
