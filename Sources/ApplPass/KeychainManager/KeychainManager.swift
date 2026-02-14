@@ -8,11 +8,21 @@ struct KeychainManager: Sendable {
       CFDictionary,
       UnsafeMutablePointer<CFTypeRef?>?
     ) -> OSStatus
+  typealias AddFunction =
+    @Sendable (
+      CFDictionary,
+      UnsafeMutablePointer<CFTypeRef?>?
+    ) -> OSStatus
 
   private let copyMatching: CopyMatchingFunction
+  private let add: AddFunction
 
-  init(copyMatching: @escaping CopyMatchingFunction = SecItemCopyMatching) {
+  init(
+    copyMatching: @escaping CopyMatchingFunction = SecItemCopyMatching,
+    add: @escaping AddFunction = SecItemAdd
+  ) {
     self.copyMatching = copyMatching
+    self.add = add
   }
 
   /// Retrieves one password item from keychain and decodes its metadata.
@@ -68,6 +78,51 @@ struct KeychainManager: Sendable {
     default:
       throw Self.mappedError(for: status)
     }
+  }
+
+  /// Adds a new generic-password item to keychain.
+  ///
+  /// - Parameters:
+  ///   - service: Service identifier for the credential.
+  ///   - account: Account identifier for the credential.
+  ///   - password: Secret value to store.
+  ///   - label: User-facing label for the keychain item.
+  ///   - sync: Whether the item should synchronize through iCloud keychain.
+  /// - Throws: `KeychainError` when insertion fails.
+  func addPassword(
+    service: String,
+    account: String,
+    password: String,
+    label: String,
+    sync: Bool
+  ) throws {
+    guard
+      let normalizedService = try Self.normalizedValue(service, field: "service"),
+      let normalizedAccount = try Self.normalizedValue(account, field: "account"),
+      let normalizedLabel = try Self.normalizedValue(label, field: "label")
+    else {
+      throw KeychainError.operationFailed(errSecParam)
+    }
+
+    let attributes: [String: Any] = [
+      kSecClass as String: kSecClassGenericPassword,
+      kSecAttrService as String: normalizedService,
+      kSecAttrAccount as String: normalizedAccount,
+      kSecValueData as String: Data(password.utf8),
+      kSecAttrLabel as String: normalizedLabel,
+      kSecAttrSynchronizable as String: sync ? kCFBooleanTrue : kCFBooleanFalse,
+    ]
+
+    let status = add(attributes as CFDictionary, nil)
+    if status == errSecSuccess {
+      return
+    }
+
+    if status == errSecDuplicateItem {
+      throw KeychainError.duplicateItem
+    }
+
+    throw Self.mappedError(for: status)
   }
 
   /// Converts a high-level query model into a keychain query dictionary.

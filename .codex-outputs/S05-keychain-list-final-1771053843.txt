@@ -1,0 +1,48 @@
+### TCR Plan
+1. Isolate S05 work on a clean commit from `@-`.
+2. Add failing test: no matches should return `[]`.
+3. Implement minimal `listPasswords(matching:)` + list query setup.
+4. Add query/filter mapping test (service, account, shared flag, `kSecMatchLimitAll`).
+5. Add failing test for multiple returned items.
+6. Implement decoding for multi-item list results.
+7. Add shared-inclusion test, run full verification, update tracking files.
+
+### Implementation
+1. Cycle 1
+- Changed: added `Tests/ApplPassTests/KeychainManagerListTests.swift:1` with no-match test.
+- Changed: added `listPasswords(matching:)` and `listingQuery(for:)` in `Sources/ApplPass/KeychainManager/KeychainManager.swift:53`.
+- Test result: initial red (missing method), then green after implementation (`swift build --disable-sandbox && swift test --disable-sandbox`).
+- Decision: commit (`test(keychain): add list no-match behavior test`).
+
+2. Cycle 2
+- Changed: added filter/match-limit assertions in `Tests/ApplPassTests/KeychainManagerListTests.swift:26`.
+- Test result: red once (missing `Foundation` import), then green after adding import.
+- Decision: commit (`test(keychain): verify list query filter mapping`).
+
+3. Cycle 3
+- Changed: added multi-match decoding test in `Tests/ApplPassTests/KeychainManagerListTests.swift:56`.
+- Test result: red (count mismatch as expected), then green after implementation.
+- Changed: implemented `decodeItems(from:fallbackQuery:)` and wired it into list success path in `Sources/ApplPass/KeychainManager/KeychainManager.swift:249`.
+- Decision: commit (`test(keychain): verify list decodes multiple items`).
+
+4. Cycle 4
+- Changed: added shared-status behavior test (`includeShared == true`) in `Tests/ApplPassTests/KeychainManagerListTests.swift:91`.
+- Test result: green.
+- Decision: commit (`test(keychain): cover list shared filter semantics`).
+
+5. Completion cycle
+- Changed: set S05 pass flag in `prd.json:97`.
+- Changed: appended Iteration 5 entry in `progress.txt:56`.
+- Decision: commit (`chore(ralph): complete story S05-keychain-list`).
+
+### Verification
+All passed:
+1. `swift build --disable-sandbox`
+2. `swift build -c release --disable-sandbox`
+3. `swift test --disable-sandbox --verbose`
+4. `swift format lint --recursive .`
+
+### Completion
+1. `prd.json` updated: `S05-keychain-list` now `"passes": true` at `prd.json:97`.
+2. `progress.txt` updated with Iteration 5 summary at `progress.txt:56`.
+3. Story completion committed as `chore(ralph): complete story S05-keychain-list`.
