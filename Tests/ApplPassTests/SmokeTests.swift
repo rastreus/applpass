@@ -12,4 +12,20 @@ struct SmokeTests {
   func commandConfigurationHasVersion() {
     #expect(ApplPass.configuration.version == ApplPass.version)
   }
+
+  @Test("Missing command error lists available subcommands")
+  func missingCommandErrorListsAvailableSubcommands() {
+    #expect(
+      ApplPassCommandError.missingSubcommand.description
+        == "Missing command. Available commands: get, list."
+    )
+  }
+
+  @Test("Unknown command error lists available subcommands")
+  func unknownCommandErrorListsAvailableSubcommands() {
+    #expect(
+      ApplPassCommandError.unknownSubcommand("bad").description
+        == "Unknown command 'bad'. Available commands: get, list."
+    )
+  }
 }
