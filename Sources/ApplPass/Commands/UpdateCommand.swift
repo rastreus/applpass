@@ -34,7 +34,7 @@ struct UpdateCommand: ParsableCommand {
   typealias OutputFunction = @Sendable (String) -> Void
 
   private var updatePassword: UpdatePasswordFunction = { query, password in
-    try KeychainManager().updatePassword(for: query, newPassword: password)
+    try PasswordStoreFactory.make().updatePassword(for: query, newPassword: password)
   }
   private var generatePassword: GeneratePasswordFunction = { length in
     try PasswordGenerator.generate(length: length)

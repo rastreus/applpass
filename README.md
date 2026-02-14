@@ -1,7 +1,11 @@
 # applpass
 
-`applpass` is a Swift CLI for reading and managing passwords in macOS Keychain,
-including shared iCloud Passwords entries.
+`applpass` is a Swift CLI for reading and managing passwords in macOS Keychain
+via `Security.framework`.
+
+Passwords.app Shared Groups are not currently exposed via a public API suitable
+for a standalone CLI. This repo is structured so a new storage backend can be
+plugged in later if Apple ships an official interface.
 
 ## Overview
 
@@ -94,6 +98,10 @@ Key options:
 - `--format table|json|csv|plain` (default: `table`)
 - `--shared-only`, `--personal-only`
 - `--show-passwords` to include password values in output (this may trigger keychain access prompts)
+
+Note: `--shared-only` and `--personal-only` filter by the keychain item's
+`kSecAttrSynchronizable` attribute (iCloud Keychain), not Passwords.app Shared
+Groups.
 
 ### `add`
 

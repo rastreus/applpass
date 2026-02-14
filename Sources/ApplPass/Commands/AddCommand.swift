@@ -36,7 +36,7 @@ struct AddCommand: ParsableCommand {
   typealias OutputFunction = @Sendable (String) -> Void
 
   private var addPassword: AddPasswordFunction = { service, account, password, label, sync in
-    try KeychainManager().addPassword(
+    try PasswordStoreFactory.make().addPassword(
       service: service,
       account: account,
       password: password,

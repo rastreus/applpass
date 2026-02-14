@@ -33,7 +33,7 @@ struct ListCommand: ParsableCommand {
   typealias OutputFunction = @Sendable (String) -> Void
 
   private var listPasswords: ListPasswordsFunction = { query, includePasswordData in
-    try KeychainManager().listPasswords(
+    try PasswordStoreFactory.make().listPasswords(
       matching: query,
       includePasswordData: includePasswordData
     )
@@ -130,7 +130,7 @@ struct ListCommand: ParsableCommand {
       limit: 100
     )
 
-    let itemClasses: [ItemClass] = [.internetPassword, .genericPassword]
+    let itemClasses = ItemClass.defaultLookupOrder
     var items: [KeychainItem] = []
     do {
       for itemClass in itemClasses {

@@ -26,10 +26,10 @@ struct DeleteCommand: ParsableCommand {
   typealias OutputFunction = @Sendable (String) -> Void
 
   private var deletePassword: DeletePasswordFunction = { query in
-    try KeychainManager().deletePassword(for: query)
+    try PasswordStoreFactory.make().deletePassword(for: query)
   }
   private var listPasswords: ListPasswordsFunction = { query, includePasswordData in
-    try KeychainManager().listPasswords(
+    try PasswordStoreFactory.make().listPasswords(
       matching: query,
       includePasswordData: includePasswordData
     )

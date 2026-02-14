@@ -3,7 +3,9 @@
 ## Project Overview
 
 ### Purpose
-A command-line interface (CLI) tool written in Swift that provides secure access to passwords stored in Apple's iCloud Keychain, with support for shared password groups from the Passwords app (iOS 18+, macOS Sequoia+).
+A command-line interface (CLI) tool written in Swift that provides secure access to passwords stored in macOS Keychain (including iCloud Keychain synchronizable items) via `Security.framework`.
+
+Passwords.app Shared Groups are a desired future capability, but Apple does not currently provide a public API suitable for a standalone CLI. The codebase is structured so a new backend can be added and selected later if Apple ships an official interface.
 
 **Binary Name**: `applpass` (Apple Password CLI)
 
@@ -128,7 +130,8 @@ applpass/
 │       │   ├── DeleteCommand.swift    # Delete password
 │       │   └── GenerateCommand.swift  # Generate password
 │       ├── KeychainManager/
-│       │   ├── KeychainManager.swift  # Core keychain operations
+│       │   ├── PasswordStore.swift    # Storage backend abstraction
+│       │   ├── KeychainManager.swift  # Security.framework backend
 │       │   ├── KeychainItem.swift     # Data models (Sendable)
 │       │   └── KeychainQuery.swift    # Query builder
 │       ├── Output/

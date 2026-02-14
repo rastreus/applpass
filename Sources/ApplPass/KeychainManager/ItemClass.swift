@@ -5,4 +5,8 @@
 enum ItemClass: String, Sendable, Equatable, Codable {
   case internetPassword
   case genericPassword
+
+  /// Default lookup order when the caller wants "whatever matches", but the
+  /// underlying store has multiple item classes.
+  static let defaultLookupOrder: [ItemClass] = [.internetPassword, .genericPassword]
 }

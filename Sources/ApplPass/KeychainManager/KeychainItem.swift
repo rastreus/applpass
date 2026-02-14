@@ -14,9 +14,9 @@ struct KeychainItem: Sendable, Equatable, Codable {
   let creationDate: Date?
   /// Date when the keychain item was last modified.
   let modificationDate: Date?
-  /// Indicates whether the item belongs to a shared password group.
+  /// Indicates whether the item is marked as synchronizable (iCloud Keychain).
   let isShared: Bool
-  /// Optional name of the shared password group.
+  /// Optional access group identifier returned by Security.framework.
   let sharedGroupName: String?
   /// Keychain class used for the stored credential.
   let itemClass: ItemClass

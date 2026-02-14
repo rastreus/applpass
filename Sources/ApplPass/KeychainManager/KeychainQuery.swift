@@ -6,7 +6,7 @@ struct KeychainQuery: Sendable, Equatable, Codable {
   var account: String?
   /// Optional domain filter used by internet password queries.
   var domain: String?
-  /// Whether shared password items should be included.
+  /// Whether synchronizable (iCloud Keychain) items should be included.
   var includeShared: Bool = true
   /// Keychain class to query.
   var itemClass: ItemClass = .internetPassword

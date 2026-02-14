@@ -28,7 +28,7 @@ struct GetCommand: ParsableCommand {
   typealias ClipboardFunction = @Sendable (String) throws -> Void
 
   private var getPassword: GetPasswordFunction = { query in
-    try KeychainManager().getPassword(for: query)
+    try PasswordStoreFactory.make().getPassword(for: query)
   }
   private var formatOutput: FormatFunction = { items, style, showPasswords in
     OutputFormatter.format(items, style: style, showPasswords: showPasswords)
@@ -117,7 +117,7 @@ struct GetCommand: ParsableCommand {
       itemClass: .internetPassword,
       limit: 1
     )
-    let itemClasses: [ItemClass] = [.internetPassword, .genericPassword]
+    let itemClasses = ItemClass.defaultLookupOrder
 
     var item: KeychainItem?
     for itemClass in itemClasses {
