@@ -208,3 +208,12 @@ Date: 2026-02-14T16:30:23Z
 - Added an agent-focused example skill at examples/skills/applpass-commands/SKILL.md with common automation command patterns.
 - Gotcha: this environment requires --disable-sandbox for swift build/swift test; release and verbose verification were run with that flag.
 - Verification passed: swift build --disable-sandbox, swift build -c release --disable-sandbox, swift test --disable-sandbox --verbose, swift format lint --recursive .
+## Iteration 20 — S20-ci-polish — CI/CD final polish and release workflow
+Date: 2026-02-14T16:40:13Z
+- Updated `.github/workflows/ci.yml` to enforce CI checks on `push`/`pull_request` to `main` with explicit debug build, verbose tests, formatting lint, and release build.
+- Added `.github/workflows/release.yml` to trigger on `v*` tags, run full verification, package `applpass` into a macOS arm64 tarball, generate SHA-256 checksums, upload workflow artifacts, and publish a GitHub Release.
+- Added `CHANGELOG.md` with `Unreleased` and `0.1.0` entries; release notes are extracted from the matching changelog section during tagged releases.
+- Added optional formatting pre-commit hook at `.githooks/pre-commit` and documented hook setup plus CI/release/manual verification steps in `README.md`.
+- Manual release logic was dry-run locally by building release artifacts and changelog extraction; GitHub-side trigger checks are documented for `git push origin main` and `git push origin v<version>`.
+- Gotcha: `actionlint`/`act` are not installed in this environment, so workflow validation relied on local command dry-runs plus full project verification.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.

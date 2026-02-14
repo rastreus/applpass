@@ -411,7 +411,7 @@
         "S18-integration-tests",
         "S19-readme-docs"
       ],
-      "passes": false
+      "passes": true
     }
   ],
   "metadata": {
