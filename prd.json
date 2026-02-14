@@ -191,7 +191,7 @@
       "dependencies": [
         "S02-data-models"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S11-get-command",

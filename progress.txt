@@ -102,3 +102,15 @@ Date: 2026-02-14T07:52:26Z
 - Added `Tests/ApplPassTests/PasswordGeneratorTests.swift` coverage for default/parameterized lengths (`16, 32, 64, 128`), inclusion/exclusion behavior, error paths, and randomness across multiple calls.
 - Gotcha: selecting from a weighted combined pool can miss low-probability sets (especially digits); seeded-per-set generation avoids this while preserving randomness.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 10 — S10-output-formatter — Output formatting (table, JSON, plain)
+Date: 2026-02-14T08:02:15Z
+- Added `Sources/ApplPass/Output/OutputStyle.swift` with `OutputStyle` enum cases: `table`, `json`, `csv`, `plain`.
+- Added `Sources/ApplPass/Output/OutputFormatter.swift` with `OutputFormatter.format(_:style:showPasswords:)` and per-style renderers for table, JSON, CSV, and plain output.
+- Implemented table output with aligned columns and headers, with optional password column enabled only via `showPasswords`.
+- Implemented JSON output as a valid array payload using `JSONSerialization`, preserving special characters and omitting password fields by default.
+- Implemented CSV output with RFC 4180 quoting rules (quote doubling, comma/newline/CR quoting, CRLF row separators) and optional password column support.
+- Implemented plain output as value-only, tab-delimited lines (`service\taccount`, optionally `\tpassword`) for pipeline-friendly usage.
+- Added `Tests/ApplPassTests/OutputFormatterTests.swift` covering table/json/csv/plain behavior, password redaction defaults, show-passwords opt-in, and JSON/CSV escaping edge cases.
+- Gotcha: `ISO8601DateFormatter` static storage fails Swift 6 strict concurrency sendability checks; date serialization uses value-based `Date.ISO8601Format()` instead.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
