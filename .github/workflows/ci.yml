@@ -4,9 +4,14 @@ on:
   push:
     branches: ["main"]
   pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  checks:
     runs-on: macos-14
 
     steps:
@@ -27,12 +32,12 @@ jobs:
       - name: Test
         run: swift test --disable-sandbox --verbose
 
-      - name: Lint format (if available)
+      - name: Lint format
         run: |
           if swift format --help >/dev/null 2>&1; then
             swift format lint --recursive Sources/ Tests/
           else
-            echo "swift format not available, skipping lint"
+            swift run --disable-sandbox swift-format lint --recursive Sources/ Tests/
           fi
 
       - name: Build (release)
