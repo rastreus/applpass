@@ -45,9 +45,16 @@ struct OutputFormatter: Sendable {
     _ items: [KeychainItem],
     showPasswords: Bool
   ) -> String {
-    _ = items
-    _ = showPasswords
-    return ""
+    let payload = items.map { jsonObject(for: $0, showPasswords: showPasswords) }
+    guard
+      JSONSerialization.isValidJSONObject(payload),
+      let data = try? JSONSerialization.data(withJSONObject: payload, options: []),
+      let text = String(data: data, encoding: .utf8)
+    else {
+      return "[]"
+    }
+
+    return text
   }
 
   private static func formatCSV(
@@ -96,5 +103,26 @@ struct OutputFormatter: Sendable {
         value.padding(toLength: width, withPad: " ", startingAt: 0)
       }
       .joined(separator: " | ")
+  }
+
+  private static func jsonObject(for item: KeychainItem, showPasswords: Bool) -> [String: Any] {
+    var object: [String: Any] = [
+      "service": item.service,
+      "account": item.account,
+      "label": item.label as Any,
+      "isShared": item.isShared,
+      "sharedGroupName": item.sharedGroupName as Any,
+      "itemClass": item.itemClass.rawValue,
+    ]
+    if let creationDate = item.creationDate {
+      object["creationDate"] = creationDate.ISO8601Format()
+    }
+    if let modificationDate = item.modificationDate {
+      object["modificationDate"] = modificationDate.ISO8601Format()
+    }
+    if showPasswords {
+      object["password"] = item.password
+    }
+    return object
   }
 }

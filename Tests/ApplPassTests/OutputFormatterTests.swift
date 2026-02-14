@@ -33,6 +33,42 @@ struct OutputFormatterTests {
     let uniqueLineLengths = Set(lines.map(\.count))
     #expect(uniqueLineLengths.count == 1)
   }
+
+  @Test("JSON format emits valid array and redacts passwords by default")
+  func jsonFormatIsValidAndRedactedByDefault() throws {
+    let output = OutputFormatter.format(fixtures, style: .json)
+    #expect(!output.contains("secret-one"))
+    #expect(!output.contains("secret-two"))
+
+    let records = try parseJSONRecords(from: output)
+    #expect(records.count == 2)
+    #expect(records.allSatisfy { $0["password"] == nil })
+    #expect(records.map { $0["service"] as? String } == ["alpha", "beta-long"])
+  }
+
+  @Test("JSON format escapes special characters and includes password when requested")
+  func jsonFormatEscapesSpecialCharacters() throws {
+    let special = KeychainItem(
+      service: "svc\"line\nbreak",
+      account: "user\\account",
+      password: "pass,\"line\nbreak",
+      label: "ops,team",
+      creationDate: nil,
+      modificationDate: nil,
+      isShared: true,
+      sharedGroupName: "Team \"Blue\"",
+      itemClass: .internetPassword
+    )
+
+    let output = OutputFormatter.format([special], style: .json, showPasswords: true)
+    let records = try parseJSONRecords(from: output)
+
+    #expect(records.count == 1)
+    #expect(records[0]["service"] as? String == special.service)
+    #expect(records[0]["account"] as? String == special.account)
+    #expect(records[0]["password"] as? String == special.password)
+    #expect(records[0]["sharedGroupName"] as? String == special.sharedGroupName)
+  }
 }
 
 private let fixtures = [
@@ -59,3 +95,18 @@ private let fixtures = [
     itemClass: .internetPassword
   ),
 ]
+
+private func parseJSONRecords(from json: String) throws -> [[String: Any]] {
+  guard let data = json.data(using: .utf8) else {
+    Issue.record("Expected UTF-8 JSON output")
+    return []
+  }
+
+  let object = try JSONSerialization.jsonObject(with: data)
+  guard let records = object as? [[String: Any]] else {
+    Issue.record("Expected top-level JSON array of dictionaries")
+    return []
+  }
+
+  return records
+}
