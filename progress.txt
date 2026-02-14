@@ -33,3 +33,13 @@ Date: 2026-02-14T07:00:56Z
 - Added `Tests/ApplPassTests/KeychainModelsTests.swift` to verify `Sendable` conformance and `Codable` round-trip behavior.
 - Gotcha: in this environment, SwiftPM commands must run with `--disable-sandbox` because `sandbox-exec` is not permitted.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive Sources/ Tests/`.
+
+## Iteration 3 — S03-keychain-manager — KeychainManager core implementation
+Date: 2026-02-14T07:12:50Z
+- Added `Sources/ApplPass/KeychainManager/KeychainManager.swift` with `KeychainManager` query builder logic for Security.framework dictionaries.
+- Implemented `buildQuery(for:)` conversion from `KeychainQuery` to `CFDictionary` including class mapping, service/account attributes, optional internet security domain, synchronizable behavior, and match-limit behavior.
+- Added validation and error handling for invalid query input (`empty service/account/domain`, `limit <= 0`, and domain usage with generic-password class) via `KeychainError.invalidParameter`.
+- Added comprehensive query-construction tests in `Tests/ApplPassTests/KeychainManagerTests.swift` for internet/generic mapping, synchronizable and limit values, and invalid-parameter error paths.
+- Added usage-example documentation to `buildQuery(for:)` doc comments.
+- Gotcha: Security.framework uses `kSecAttrSecurityDomain` (not `kSecAttrDomain`) for internet-password domain queries.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.

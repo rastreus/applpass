@@ -56,7 +56,7 @@
       "dependencies": [
         "S02-data-models"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S04-keychain-get",
