@@ -1,0 +1,44 @@
+### TCR Plan
+1. Create isolated S08 working head.
+2. Add `SecItemDelete` seam to `KeychainManager`.
+3. Implement `deletePassword(for:)` and delete-query builder.
+4. Add delete unit tests.
+5. Add delete integration test (add -> delete -> get not found).
+6. Run full verification suite.
+7. Mark S08 complete in tracking files and commit.
+
+### Implementation
+1. Cycle 1
+- Changed: added `DeleteFunction`, `delete` dependency, and initializer wiring in `Sources/ApplPass/KeychainManager/KeychainManager.swift:21`, `Sources/ApplPass/KeychainManager/KeychainManager.swift:29`, `Sources/ApplPass/KeychainManager/KeychainManager.swift:35`.
+- Verification: `swift build --disable-sandbox` passed; `swift test --disable-sandbox` passed.
+- Decision: commit (`2cc428f3`).
+
+2. Cycle 2
+- Changed: implemented `deletePassword(for:)` with idempotent `errSecItemNotFound` handling in `Sources/ApplPass/KeychainManager/KeychainManager.swift:178`; added `deleteQuery(for:)` removing `kSecMatchLimit` in `Sources/ApplPass/KeychainManager/KeychainManager.swift:324`.
+- Verification: `swift build --disable-sandbox` passed; `swift test --disable-sandbox` passed.
+- Decision: commit (`db7732c4`).
+
+3. Cycle 3
+- Changed: added unit tests in `Tests/ApplPassTests/KeychainManagerDeleteTests.swift:6` for query mapping, missing-item idempotency, and auth error mapping.
+- Verification: `swift build --disable-sandbox` passed; `swift test --disable-sandbox` passed.
+- Decision: commit (`fa81cb87`).
+
+4. Cycle 4
+- Changed: added serialized integration test and in-memory delete seam harness in `Tests/ApplPassTests/KeychainManagerDeleteTests.swift:72`, `Tests/ApplPassTests/KeychainManagerDeleteTests.swift:111`.
+- Verification: `swift build --disable-sandbox` passed; `swift test --disable-sandbox` passed.
+- Decision: commit (`692b18f2`).
+
+5. Cycle 5
+- Changed: marked story pass in `prd.json:137` and `prd.json:152`; appended Iteration 8 entry in `progress.txt:86`.
+- Decision: commit (`93dd273e`).
+
+### Verification
+1. `swift build --disable-sandbox` ✅
+2. `swift build -c release --disable-sandbox` ✅
+3. `swift test --disable-sandbox --verbose` ✅ (35 tests, 12 suites passed)
+4. `swift format lint --recursive .` ✅
+
+### Completion
+1. `S08-keychain-delete` is now marked `"passes": true` in `prd.json:152`.
+2. Iteration summary added to `progress.txt:86`.
+3. Working copy is clean on top of completion commit (`93dd273e`).
