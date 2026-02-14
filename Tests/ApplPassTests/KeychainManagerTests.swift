@@ -89,4 +89,56 @@ struct KeychainManagerTests {
     let dictionary = try KeychainManager.buildQuery(for: query) as NSDictionary
     #expect(dictionary[kSecAttrSecurityDomain as String] as? String == "example.com")
   }
+
+  @Test("buildQuery rejects empty service values")
+  func buildQueryRejectsEmptyService() {
+    let query = KeychainQuery(
+      service: "   ",
+      account: "bot@example.com",
+      domain: nil,
+      includeShared: true,
+      itemClass: .internetPassword,
+      limit: 10
+    )
+
+    #expect(throws: KeychainError.invalidParameter("service cannot be empty")) {
+      _ = try KeychainManager.buildQuery(for: query)
+    }
+  }
+
+  @Test("buildQuery rejects non-positive limits")
+  func buildQueryRejectsNonPositiveLimit() {
+    let query = KeychainQuery(
+      service: "github.com",
+      account: "bot@example.com",
+      domain: nil,
+      includeShared: true,
+      itemClass: .internetPassword,
+      limit: 0
+    )
+
+    #expect(throws: KeychainError.invalidParameter("limit must be greater than 0")) {
+      _ = try KeychainManager.buildQuery(for: query)
+    }
+  }
+
+  @Test("buildQuery rejects domain for generic-password items")
+  func buildQueryRejectsDomainForGenericPassword() {
+    let query = KeychainQuery(
+      service: "cli-tool",
+      account: "bot@example.com",
+      domain: "example.com",
+      includeShared: true,
+      itemClass: .genericPassword,
+      limit: 10
+    )
+
+    #expect(
+      throws: KeychainError.invalidParameter(
+        "domain is only supported for internet password items"
+      )
+    ) {
+      _ = try KeychainManager.buildQuery(for: query)
+    }
+  }
 }

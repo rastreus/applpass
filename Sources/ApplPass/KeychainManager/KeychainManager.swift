@@ -9,6 +9,8 @@ struct KeychainManager: Sendable {
   /// - Returns: A `CFDictionary` that can be passed to Security APIs.
   /// - Throws: `KeychainError.invalidParameter` when string filters are empty.
   static func buildQuery(for query: KeychainQuery) throws -> CFDictionary {
+    try validate(query)
+
     let service = try normalizedValue(query.service, field: "service")
     let account = try normalizedValue(query.account, field: "account")
     let domain = try normalizedValue(query.domain, field: "domain")
@@ -66,6 +68,19 @@ struct KeychainManager: Sendable {
     }
 
     return trimmed
+  }
+
+  private static func validate(_ query: KeychainQuery) throws {
+    guard query.limit > 0 else {
+      throw KeychainError.invalidParameter("limit must be greater than 0")
+    }
+
+    let domain = query.domain?.trimmingCharacters(in: .whitespacesAndNewlines)
+    if query.itemClass == .genericPassword, let domain, !domain.isEmpty {
+      throw KeychainError.invalidParameter(
+        "domain is only supported for internet password items"
+      )
+    }
   }
 
   private static func matchLimitValue(for limit: Int) -> Any {
