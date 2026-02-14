@@ -1,0 +1,68 @@
+### TCR Plan
+1. Add failing duplicate-item unit test for `addPassword(...)`.
+2. Implement `SecItemAdd` injection seam + `addPassword(service:account:password:label:sync:)`.
+3. Add unit tests for add-query attributes (class/service/account/password/label/sync).
+4. Harden input validation (reject empty password) and keep tests green.
+5. Add serialized integration-style add/get test with explicit cleanup delete.
+6. Run full verification suite.
+7. Mark story complete in tracking files and commit.
+
+### Implementation
+1. Cycle 1
+- Changed:
+  - Added initial add tests scaffold in `Tests/ApplPassTests/KeychainManagerAddTests.swift:6`.
+  - Added `AddFunction` seam and `addPassword(...)` in `Sources/ApplPass/KeychainManager/KeychainManager.swift:11` and `Sources/ApplPass/KeychainManager/KeychainManager.swift:92`.
+- Test result:
+  - Initial test failed (expected): missing `add` seam / `addPassword`.
+  - After implementation: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision:
+  - Commit kept: `7548a41f` (`feat(keychain): add addPassword duplicate-item handling`).
+
+2. Cycle 2
+- Changed:
+  - Added attribute mapping unit test (including `kSecAttrLabel`, `kSecAttrSynchronizable`) in `Tests/ApplPassTests/KeychainManagerAddTests.swift:8`.
+- Test result:
+  - First run failed on missing `Foundation` import in test file.
+  - Added `import Foundation` at `Tests/ApplPassTests/KeychainManagerAddTests.swift:1`.
+  - Re-run passed.
+- Decision:
+  - Commit kept: `ffa66253` (`test(keychain): verify add query attributes`).
+
+3. Cycle 3
+- Changed:
+  - Added failing empty-password unit test in `Tests/ApplPassTests/KeychainManagerAddTests.swift:54`.
+  - Implemented rejection of empty password in `Sources/ApplPass/KeychainManager/KeychainManager.swift:107`.
+  - Set synchronizable attribute with `Bool` (`sync`) in `Sources/ApplPass/KeychainManager/KeychainManager.swift:117`.
+- Test result:
+  - Failing test first (expected), then pass after implementation.
+- Decision:
+  - Commit kept: `dc2ec6b5` (`feat(keychain): harden addPassword validation`).
+
+4. Cycle 4
+- Changed:
+  - Added serialized integration suite and in-memory add/copy/delete harness in `Tests/ApplPassTests/KeychainManagerAddTests.swift:73`.
+  - Integration test verifies add + retrieve and cleanup via delete in `defer` (`Tests/ApplPassTests/KeychainManagerAddTests.swift:83`).
+- Test result:
+  - `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision:
+  - Commit kept: `6c53a14a` (`test(keychain): add addPassword integration coverage`).
+
+5. Story completion commit
+- Changed:
+  - Set story pass flag in `prd.json:100`.
+  - Appended iteration summary in `progress.txt:65`.
+- Decision:
+  - Commit kept: `80b4124c` (`chore(ralph): complete story S06-keychain-add`).
+
+### Verification
+All required checks passed:
+1. `swift build --disable-sandbox`
+2. `swift build -c release --disable-sandbox`
+3. `swift test --disable-sandbox --verbose`
+4. `swift format lint --recursive .`
+
+### Completion
+1. `S06-keychain-add` marked complete: `prd.json:100` (`"passes": true`).
+2. Iteration log appended: `progress.txt:65`.
+3. TCR story completion committed: `80b4124c`.
+4. Working copy is clean.

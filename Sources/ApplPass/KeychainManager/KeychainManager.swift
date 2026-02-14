@@ -13,16 +13,24 @@ struct KeychainManager: Sendable {
       CFDictionary,
       UnsafeMutablePointer<CFTypeRef?>?
     ) -> OSStatus
+  typealias UpdateFunction =
+    @Sendable (
+      CFDictionary,
+      CFDictionary
+    ) -> OSStatus
 
   private let copyMatching: CopyMatchingFunction
   private let add: AddFunction
+  private let update: UpdateFunction
 
   init(
     copyMatching: @escaping CopyMatchingFunction = SecItemCopyMatching,
-    add: @escaping AddFunction = SecItemAdd
+    add: @escaping AddFunction = SecItemAdd,
+    update: @escaping UpdateFunction = SecItemUpdate
   ) {
     self.copyMatching = copyMatching
     self.add = add
+    self.update = update
   }
 
   /// Retrieves one password item from keychain and decodes its metadata.
