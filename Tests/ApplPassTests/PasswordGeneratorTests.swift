@@ -71,4 +71,49 @@ struct PasswordGeneratorTests {
       #expect(password.contains(where: { Self.symbolCharacters.contains($0) }))
     }
   }
+
+  @Test("generate throws for non-positive lengths")
+  func generateThrowsForNonPositiveLength() {
+    #expect(throws: PasswordGeneratorError.invalidLength) {
+      _ = try PasswordGenerator.generate(length: 0)
+    }
+  }
+
+  @Test("generate throws when all character sets are disabled")
+  func generateThrowsWhenAllCharacterSetsAreDisabled() {
+    #expect(throws: PasswordGeneratorError.noCharacterSetsEnabled) {
+      _ = try PasswordGenerator.generate(
+        length: 32,
+        includeSymbols: false,
+        includeUppercase: false,
+        includeLowercase: false,
+        includeDigits: false
+      )
+    }
+  }
+
+  @Test("generate throws when length is shorter than enabled character-set count")
+  func generateThrowsWhenLengthIsTooShortForEnabledSets() {
+    #expect(throws: PasswordGeneratorError.lengthTooShortForEnabledSets) {
+      _ = try PasswordGenerator.generate(
+        length: 2,
+        includeSymbols: false,
+        includeUppercase: true,
+        includeLowercase: true,
+        includeDigits: true
+      )
+    }
+  }
+
+  @Test("generate produces different values across multiple calls")
+  func generateProducesDifferentValuesAcrossCalls() throws {
+    var values = Set<String>()
+
+    for _ in 0..<20 {
+      let password = try PasswordGenerator.generate(length: 32)
+      values.insert(password)
+    }
+
+    #expect(values.count > 1)
+  }
 }
