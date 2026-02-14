@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.2.3"
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build (debug)
+        run: swift build --disable-sandbox
+
+      - name: Test
+        run: swift test --disable-sandbox --verbose
+
+      - name: Lint format (if available)
+        run: |
+          if swift format --help >/dev/null 2>&1; then
+            swift format lint --recursive Sources/ Tests/
+          else
+            echo "swift format not available, skipping lint"
+          fi
+
+      - name: Build (release)
+        run: swift build -c release --disable-sandbox
