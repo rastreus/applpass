@@ -268,12 +268,6 @@ git config core.hooksPath .githooks
 chmod +x .githooks/pre-commit
 ```
 
-To disable temporarily for one commit:
-
-```bash
-SKIP=1 jj new
-```
-
 Keep `CHANGELOG.md` updated so release notes are generated correctly for each tag.
 
 ## Contributing
