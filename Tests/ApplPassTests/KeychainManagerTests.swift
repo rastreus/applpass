@@ -57,4 +57,36 @@ struct KeychainManagerTests {
     let synchronizableValue = dictionary[kSecAttrSynchronizable as String] as? NSNumber
     #expect(synchronizableValue?.boolValue == false)
   }
+
+  @Test("buildQuery maps generic-password service to kSecAttrService")
+  func buildQueryGenericPasswordServiceMapping() throws {
+    let query = KeychainQuery(
+      service: "cli-tool",
+      account: "bot@example.com",
+      domain: nil,
+      includeShared: true,
+      itemClass: .genericPassword,
+      limit: 10
+    )
+
+    let dictionary = try KeychainManager.buildQuery(for: query) as NSDictionary
+    #expect(dictionary[kSecClass as String] as? String == kSecClassGenericPassword as String)
+    #expect(dictionary[kSecAttrService as String] as? String == "cli-tool")
+    #expect(dictionary[kSecAttrServer as String] == nil)
+  }
+
+  @Test("buildQuery includes domain for internet-password items")
+  func buildQueryInternetPasswordIncludesDomain() throws {
+    let query = KeychainQuery(
+      service: "accounts.example.com",
+      account: "bot@example.com",
+      domain: "example.com",
+      includeShared: true,
+      itemClass: .internetPassword,
+      limit: 10
+    )
+
+    let dictionary = try KeychainManager.buildQuery(for: query) as NSDictionary
+    #expect(dictionary[kSecAttrSecurityDomain as String] as? String == "example.com")
+  }
 }

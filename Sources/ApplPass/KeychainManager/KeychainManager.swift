@@ -11,6 +11,7 @@ struct KeychainManager: Sendable {
   static func buildQuery(for query: KeychainQuery) throws -> CFDictionary {
     let service = try normalizedValue(query.service, field: "service")
     let account = try normalizedValue(query.account, field: "account")
+    let domain = try normalizedValue(query.domain, field: "domain")
 
     var dictionary: [String: Any] = [kSecClass as String: securityClass(for: query.itemClass)]
 
@@ -20,6 +21,10 @@ struct KeychainManager: Sendable {
 
     if let account {
       dictionary[kSecAttrAccount as String] = account
+    }
+
+    if let domain, query.itemClass == .internetPassword {
+      dictionary[kSecAttrSecurityDomain as String] = domain
     }
 
     dictionary[kSecAttrSynchronizable as String] =
