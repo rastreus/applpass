@@ -3,6 +3,17 @@ import Security
 
 /// Builds Security-framework query dictionaries for keychain operations.
 struct KeychainManager: Sendable {
+  typealias CopyMatchingFunction = @Sendable (
+    CFDictionary,
+    UnsafeMutablePointer<CFTypeRef?>?
+  ) -> OSStatus
+
+  private let copyMatching: CopyMatchingFunction
+
+  init(copyMatching: @escaping CopyMatchingFunction = SecItemCopyMatching) {
+    self.copyMatching = copyMatching
+  }
+
   /// Converts a high-level query model into a keychain query dictionary.
   ///
   /// - Parameter query: User-facing query filters.
