@@ -20,7 +20,7 @@ generating passwords.
 Build from source:
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/rastreus/applpass
 cd applpass
 swift build -c release
 ```
