@@ -82,3 +82,13 @@ Date: 2026-02-14T07:40:17Z
 - Added serialized integration-style update coverage (add → update → get) using an in-memory keychain harness, verifying updated password and preserved metadata (`service`, `account`, `label`, `itemClass`).
 - Gotcha: update queries should not include `kSecMatchLimit`; the implementation removes it before calling `SecItemUpdate` while preserving filter attributes.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 8 — S08-keychain-delete — Keychain delete operation
+Date: 2026-02-14T07:46:36Z
+- Added `KeychainManager.deletePassword(for:)` in `Sources/ApplPass/KeychainManager/KeychainManager.swift`, wired to `SecItemDelete` with a dedicated delete-query builder path.
+- Added an injectable `SecItemDelete` seam (`DeleteFunction`) to `KeychainManager` for deterministic delete unit and integration testing while preserving production defaults.
+- Implemented idempotent delete behavior: `errSecItemNotFound` now returns success, while authorization and other failures continue to map through existing keychain error handling.
+- Added `Tests/ApplPassTests/KeychainManagerDeleteTests.swift` with unit coverage for delete-query attribute mapping, non-existent-item behavior, and authorization error mapping.
+- Added serialized integration-style delete coverage (add -> delete -> get) using an in-memory keychain harness, verifying post-delete lookups return `KeychainError.itemNotFound`.
+- Gotcha: delete operations should not include `kSecMatchLimit`; the implementation removes it before calling `SecItemDelete`.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.

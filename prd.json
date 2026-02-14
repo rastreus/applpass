@@ -149,7 +149,7 @@
       "dependencies": [
         "S06-keychain-add"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S09-password-generator",
