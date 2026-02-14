@@ -92,3 +92,13 @@ Date: 2026-02-14T07:46:36Z
 - Added serialized integration-style delete coverage (add -> delete -> get) using an in-memory keychain harness, verifying post-delete lookups return `KeychainError.itemNotFound`.
 - Gotcha: delete operations should not include `kSecMatchLimit`; the implementation removes it before calling `SecItemDelete`.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 9 — S09-password-generator — Password generation utility
+Date: 2026-02-14T07:52:26Z
+- Added `Sources/ApplPass/Utilities/PasswordGenerator.swift` with `PasswordGenerator.generate(length:includeSymbols:includeUppercase:includeLowercase:includeDigits:)` and default length `32`.
+- Implemented cryptographic randomness with `SecRandomCopyBytes` for character selection and secure Fisher-Yates shuffling.
+- Added `PasswordGeneratorError` for invalid length, no enabled character sets, too-short length for enabled sets, and random generation failures.
+- Enforced complexity requirements by pre-seeding one character from each enabled set before filling remaining characters and shuffling.
+- Added `Tests/ApplPassTests/PasswordGeneratorTests.swift` coverage for default/parameterized lengths (`16, 32, 64, 128`), inclusion/exclusion behavior, error paths, and randomness across multiple calls.
+- Gotcha: selecting from a weighted combined pool can miss low-probability sets (especially digits); seeded-per-set generation avoids this while preserving randomness.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.

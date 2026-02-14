@@ -1,4 +1,5 @@
 import Testing
+
 @testable import ApplPass
 
 @Suite("Password Generator Tests")
@@ -40,18 +41,19 @@ struct PasswordGeneratorTests {
       includeDigits: includeDigits
     )
 
-    #expect(password.allSatisfy { character in
-      switch character {
-      case _ where character.isUppercase:
-        return includeUppercase
-      case _ where character.isLowercase:
-        return includeLowercase
-      case _ where character.isNumber:
-        return includeDigits
-      default:
-        return includeSymbols
-      }
-    })
+    #expect(
+      password.allSatisfy { character in
+        switch character {
+        case _ where character.isUppercase:
+          return includeUppercase
+        case _ where character.isLowercase:
+          return includeLowercase
+        case _ where character.isNumber:
+          return includeDigits
+        default:
+          return includeSymbols
+        }
+      })
   }
 
   @Test("generate includes at least one character from each enabled set")
