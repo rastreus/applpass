@@ -22,6 +22,9 @@ struct ApplPass: ParsableCommand {
     case "delete":
       var command = try DeleteCommand.parse(arguments: Array(arguments.dropFirst()))
       try command.run()
+    case "generate":
+      var command = try GenerateCommand.parse(arguments: Array(arguments.dropFirst()))
+      try command.run()
     case "get":
       var command = try GetCommand.parse(arguments: Array(arguments.dropFirst()))
       try command.run()
@@ -44,9 +47,10 @@ enum ApplPassCommandError: Error, Sendable, Equatable, CustomStringConvertible {
   var description: String {
     switch self {
     case .missingSubcommand:
-      return "Missing command. Available commands: add, delete, get, list, update."
+      return "Missing command. Available commands: add, delete, generate, get, list, update."
     case .unknownSubcommand(let name):
-      return "Unknown command '\(name)'. Available commands: add, delete, get, list, update."
+      return
+        "Unknown command '\(name)'. Available commands: add, delete, generate, get, list, update."
     }
   }
 }
