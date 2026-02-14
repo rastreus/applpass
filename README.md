@@ -55,6 +55,12 @@ applpass get --service github.com --account bot@example.com --value-only
 Use `applpass <command> [options]` and run `applpass <command> --help` for
 command-specific options and examples.
 
+## Examples Directory
+
+See `examples/` for runnable sample scripts and
+`examples/skills/applpass-commands/SKILL.md` for an agent-oriented command
+pattern example.
+
 ## Command Reference
 
 ### `get`
