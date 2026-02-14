@@ -104,13 +104,17 @@ struct KeychainManager: Sendable {
       throw KeychainError.operationFailed(errSecParam)
     }
 
+    guard !password.isEmpty else {
+      throw KeychainError.invalidParameter("password cannot be empty")
+    }
+
     let attributes: [String: Any] = [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: normalizedService,
       kSecAttrAccount as String: normalizedAccount,
       kSecValueData as String: Data(password.utf8),
       kSecAttrLabel as String: normalizedLabel,
-      kSecAttrSynchronizable as String: sync ? kCFBooleanTrue : kCFBooleanFalse,
+      kSecAttrSynchronizable as String: sync,
     ]
 
     let status = add(attributes as CFDictionary, nil)

@@ -50,4 +50,22 @@ struct KeychainManagerAddUnitTests {
       )
     }
   }
+
+  @Test("addPassword rejects empty password input")
+  func addPasswordRejectsEmptyPassword() {
+    let manager = KeychainManager(add: { _, _ in
+      Issue.record("addPassword should not call SecItemAdd for invalid input")
+      return errSecSuccess
+    })
+
+    #expect(throws: KeychainError.invalidParameter("password cannot be empty")) {
+      try manager.addPassword(
+        service: "cli-tool",
+        account: "bot@example.com",
+        password: "",
+        label: "CLI Bot",
+        sync: false
+      )
+    }
+  }
 }
