@@ -10,6 +10,8 @@ enum KeychainError: Error, Sendable, Equatable, LocalizedError {
   case unexpectedPasswordData
   /// User denied authorization to access keychain data.
   case authorizationDenied
+  /// A keychain API returned an unhandled status code.
+  case operationFailed(Int32)
   /// Caller supplied an invalid argument.
   case invalidParameter(String)
 
@@ -23,6 +25,8 @@ enum KeychainError: Error, Sendable, Equatable, LocalizedError {
       return "Unable to decode password data."
     case .authorizationDenied:
       return "Access denied. Please allow access when prompted."
+    case .operationFailed(let status):
+      return "Keychain operation failed with status \(status)."
     case .invalidParameter(let message):
       return "Invalid parameter: \(message)"
     }
