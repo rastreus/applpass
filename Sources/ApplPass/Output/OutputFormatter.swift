@@ -61,9 +61,16 @@ struct OutputFormatter: Sendable {
     _ items: [KeychainItem],
     showPasswords: Bool
   ) -> String {
-    _ = items
-    _ = showPasswords
-    return ""
+    let header = columns(showPasswords: showPasswords)
+      .map(escapedCSVField)
+      .joined(separator: ",")
+    let rows = items.map { item in
+      rowValues(for: item, showPasswords: showPasswords)
+        .map(escapedCSVField)
+        .joined(separator: ",")
+    }
+
+    return ([header] + rows).joined(separator: "\r\n")
   }
 
   private static func formatPlain(
@@ -124,5 +131,15 @@ struct OutputFormatter: Sendable {
       object["password"] = item.password
     }
     return object
+  }
+
+  private static func escapedCSVField(_ field: String) -> String {
+    let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
+    let requiresQuotes = escaped.contains(",") || escaped.contains("\"")
+      || escaped.contains("\n") || escaped.contains("\r")
+    guard requiresQuotes else {
+      return escaped
+    }
+    return "\"\(escaped)\""
   }
 }

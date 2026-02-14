@@ -69,6 +69,42 @@ struct OutputFormatterTests {
     #expect(records[0]["password"] as? String == special.password)
     #expect(records[0]["sharedGroupName"] as? String == special.sharedGroupName)
   }
+
+  @Test("CSV format applies RFC 4180 escaping and redacts passwords by default")
+  func csvFormatEscapesAndRedactsByDefault() {
+    let special = KeychainItem(
+      service: "svc,\"one\"",
+      account: "line\nbreak",
+      password: "secret-csv",
+      label: "ops,team",
+      creationDate: nil,
+      modificationDate: nil,
+      isShared: true,
+      sharedGroupName: "Team",
+      itemClass: .internetPassword
+    )
+
+    let output = OutputFormatter.format([special], style: .csv)
+    let lines = output.components(separatedBy: "\r\n")
+
+    #expect(lines.count == 2)
+    #expect(lines[0].contains("SERVICE"))
+    #expect(!lines[0].contains("PASSWORD"))
+    #expect(lines[1].contains("\"svc,\"\"one\"\"\""))
+    #expect(lines[1].contains("\"line\nbreak\""))
+    #expect(lines[1].contains("\"ops,team\""))
+    #expect(!output.contains("secret-csv"))
+  }
+
+  @Test("CSV format adds password column when showPasswords is enabled")
+  func csvFormatIncludesPasswordsWhenRequested() {
+    let output = OutputFormatter.format(fixtures, style: .csv, showPasswords: true)
+    let lines = output.components(separatedBy: "\r\n")
+
+    #expect(lines[0].contains("PASSWORD"))
+    #expect(output.contains("secret-one"))
+    #expect(output.contains("secret-two"))
+  }
 }
 
 private let fixtures = [
