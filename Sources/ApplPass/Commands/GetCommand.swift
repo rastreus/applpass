@@ -114,7 +114,7 @@ struct GetCommand: ParsableCommand {
       account: account,
       domain: nil,
       includeShared: true,
-      itemClass: .internetPassword,
+      itemClass: .genericPassword,
       limit: 1
     )
 
