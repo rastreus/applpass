@@ -17,7 +17,7 @@ struct SmokeTests {
   func missingCommandErrorListsAvailableSubcommands() {
     #expect(
       ApplPassCommandError.missingSubcommand.description
-        == "Missing command. Available commands: add, get, list, update."
+        == "Missing command. Available commands: add, delete, get, list, update."
     )
   }
 
@@ -25,7 +25,7 @@ struct SmokeTests {
   func unknownCommandErrorListsAvailableSubcommands() {
     #expect(
       ApplPassCommandError.unknownSubcommand("bad").description
-        == "Unknown command 'bad'. Available commands: add, get, list, update."
+        == "Unknown command 'bad'. Available commands: add, delete, get, list, update."
     )
   }
 }
