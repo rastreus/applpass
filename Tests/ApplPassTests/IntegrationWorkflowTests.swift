@@ -82,6 +82,80 @@ struct IntegrationWorkflowTests {
     try getCommand.run()
     #expect(getOutput.value == password)
   }
+
+  @Test("add then list includes the item in results")
+  func addThenListIncludesItemInResults() throws {
+    let fixture = IntegrationFixture()
+    defer {
+      for status in fixture.teardownStatuses() {
+        #expect([errSecSuccess, errSecItemNotFound].contains(status))
+      }
+    }
+
+    let service = fixture.makeUniqueService("add-list")
+    let account = fixture.makeUniqueAccount()
+    let password = "secret-\(UUID().uuidString)"
+    fixture.trackForCleanup(service: service, account: account)
+
+    var addCommand = AddCommand(
+      service: service,
+      account: account,
+      label: "Workflow Add/List",
+      stdin: false,
+      generate: false,
+      sync: false,
+      length: 32,
+      addPassword: { service, account, password, label, sync in
+        try fixture.manager.addPassword(
+          service: service,
+          account: account,
+          password: password,
+          label: label,
+          sync: sync
+        )
+      },
+      generatePassword: { _ in
+        Issue.record("Password generation should not be used in this workflow test.")
+        return ""
+      },
+      readStdinLine: {
+        Issue.record("stdin input should not be used in this workflow test.")
+        return nil
+      },
+      promptPassword: {
+        password
+      },
+      output: { _ in
+      }
+    )
+
+    try addCommand.run()
+
+    let listOutput = SendableBox("")
+    var listCommand = ListCommand(
+      service: service,
+      account: nil,
+      search: nil,
+      format: .plain,
+      sharedOnly: false,
+      personalOnly: false,
+      showPasswords: false,
+      listPasswords: { query in
+        try fixture.manager.listPasswords(matching: query)
+      },
+      formatOutput: { items, style, showPasswords in
+        OutputFormatter.format(items, style: style, showPasswords: showPasswords)
+      },
+      output: { message in
+        listOutput.value = message
+      }
+    )
+
+    try listCommand.run()
+
+    let lines = listOutput.value.split(separator: "\n").map(String.init)
+    #expect(lines == ["\(service)\t\(account)"])
+  }
 }
 
 private final class IntegrationFixture: @unchecked Sendable {
