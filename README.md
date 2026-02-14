@@ -88,3 +88,40 @@ Key options:
 - `--format table|json|csv|plain` (default: `table`)
 - `--shared-only`, `--personal-only`
 - `--show-passwords` to include password values in output
+
+### `add`
+
+Add a new keychain password item.
+
+```bash
+# read from stdin
+printf '%s' 'token-123' | applpass add --service github.com --account bot@example.com --stdin
+
+# generate and store a random password
+applpass add --service github.com --account bot@example.com --generate --length 48
+```
+
+Key options:
+- `--service`, `--account` (required)
+- `--stdin` to read password from standard input
+- `--generate` and optional `--length` for auto-generated values
+- `--label` to set a custom item label
+- `--sync` to enable iCloud keychain synchronization
+
+### `update`
+
+Update an existing password for a service/account pair.
+
+```bash
+# interactive confirmation (default)
+printf '%s' 'new-token' | applpass update --service github.com --account bot@example.com --stdin
+
+# non-interactive automation
+applpass update --service github.com --account bot@example.com --generate --force
+```
+
+Key options:
+- `--service`, `--account` (required)
+- `--stdin` or `--generate` (mutually exclusive)
+- `--length` for generated password size
+- `--force` to skip confirmation prompt
