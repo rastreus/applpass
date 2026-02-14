@@ -61,3 +61,14 @@ Date: 2026-02-14T07:28:22Z
 - Added `Tests/ApplPassTests/KeychainManagerListTests.swift` covering no matches, service/account/shared filter query mapping, shared-group inclusion semantics, and multiple returned items.
 - Gotcha: listing with `kSecMatchLimitAll` can still return either a dictionary or array from injected seams/mocks, so list decoding handles both result shapes.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 6 — S06-keychain-add — Keychain add operation
+Date: 2026-02-14T07:35:10Z
+- Added `KeychainManager.addPassword(service:account:password:label:sync:)` in `Sources/ApplPass/KeychainManager/KeychainManager.swift` with Security-framework `SecItemAdd` wiring for generic-password records.
+- Added an injectable `SecItemAdd` seam to `KeychainManager` for deterministic unit/integration testing while preserving default production behavior.
+- Implemented add error mapping for duplicate items (`errSecDuplicateItem` → `KeychainError.duplicateItem`) plus existing authorization/operation mapping fallback.
+- Added input hardening: empty password is rejected as `KeychainError.invalidParameter("password cannot be empty")` before touching Security APIs.
+- Added `Tests/ApplPassTests/KeychainManagerAddTests.swift` with unit coverage for duplicate detection, add-query attribute mapping (including label and sync flag), and invalid-password validation.
+- Added serialized integration-style add/get coverage with an in-memory test keychain seam; the test explicitly performs cleanup via delete in `defer`.
+- Gotcha: in this environment, direct `SecItemAdd` against system keychains is unreliable, so integration coverage continues to use in-process seams while validating query and status semantics.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.

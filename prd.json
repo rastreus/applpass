@@ -113,7 +113,7 @@
       "dependencies": [
         "S04-keychain-get"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S07-keychain-update",
