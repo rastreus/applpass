@@ -23,3 +23,13 @@ Date: 2026-02-14T06:49:19Z
 - Added local vendored packages under `Vendor/swift-argument-parser` and `Vendor/swift-format` to satisfy offline dependency resolution in this environment.
 - Added `.gitignore` entries for `.build/`, `.swiftpm/`, and `.home/` to prevent build artifacts from entering history.
 - Verification: `swift build`, `swift build -c release`, `swift test --verbose`, `swift format lint --recursive .`, and manual `./.build/release/applpass --version` all succeeded.
+
+## Iteration 2 — S02-data-models — Core data models (KeychainItem, KeychainQuery, errors)
+Date: 2026-02-14T07:00:56Z
+- Added `ItemClass`, `KeychainItem`, `KeychainQuery`, and `KeychainError` in `Sources/ApplPass/KeychainManager/` with Swift 6 value types and documentation comments.
+- Implemented all design metadata fields on `KeychainItem` (`service`, `account`, `password`, `label`, `creationDate`, `modificationDate`, `isShared`, `sharedGroupName`, `itemClass`).
+- Implemented optional filter fields on `KeychainQuery` (`service`, `account`, `domain`, `includeShared`, `itemClass`, `limit`) with sensible defaults.
+- Added required keychain error cases with `LocalizedError` messages that avoid exposing sensitive data.
+- Added `Tests/ApplPassTests/KeychainModelsTests.swift` to verify `Sendable` conformance and `Codable` round-trip behavior.
+- Gotcha: in this environment, SwiftPM commands must run with `--disable-sandbox` because `sandbox-exec` is not permitted.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive Sources/ Tests/`.

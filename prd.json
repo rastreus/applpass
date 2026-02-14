@@ -37,7 +37,7 @@
       "dependencies": [
         "S01-project-setup"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S03-keychain-manager",
