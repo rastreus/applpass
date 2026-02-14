@@ -146,6 +146,7 @@ struct ListCommandBehaviorTests {
   @Test("run calls listPasswords and renders formatted output")
   func runCallsListAndRendersOutput() throws {
     let capturedQuery = SendableBox<KeychainQuery?>(nil)
+    let capturedIncludePasswordData = SendableBox<Bool?>(nil)
     let capturedOutput = SendableBox("")
     let capturedStyle = SendableBox<OutputStyle?>(nil)
     let capturedShowPasswords = SendableBox<Bool?>(nil)
@@ -160,8 +161,9 @@ struct ListCommandBehaviorTests {
       sharedOnly: false,
       personalOnly: false,
       showPasswords: true,
-      listPasswords: { query in
+      listPasswords: { query, includePasswordData in
         capturedQuery.value = query
+        capturedIncludePasswordData.value = includePasswordData
         return items
       },
       formatOutput: { passedItems, style, showPasswords in
@@ -181,6 +183,7 @@ struct ListCommandBehaviorTests {
     #expect(capturedQuery.value?.account == "bot@example.com")
     #expect(capturedQuery.value?.includeShared == true)
     #expect(capturedQuery.value?.itemClass == .genericPassword)
+    #expect(capturedIncludePasswordData.value == true)
     #expect(capturedStyle.value == .json)
     #expect(capturedShowPasswords.value == true)
     #expect(capturedOutput.value == "formatted-output")
@@ -189,6 +192,7 @@ struct ListCommandBehaviorTests {
   @Test("run disables shared lookup when personalOnly is enabled")
   func runDisablesSharedLookupWhenPersonalOnlyEnabled() throws {
     let capturedQuery = SendableBox<KeychainQuery?>(nil)
+    let capturedIncludePasswordData = SendableBox<Bool?>(nil)
     var command = ListCommand(
       service: nil,
       account: nil,
@@ -197,8 +201,9 @@ struct ListCommandBehaviorTests {
       sharedOnly: false,
       personalOnly: true,
       showPasswords: false,
-      listPasswords: { query in
+      listPasswords: { query, includePasswordData in
         capturedQuery.value = query
+        capturedIncludePasswordData.value = includePasswordData
         return [listFixtureItem(isShared: false)]
       },
       formatOutput: { _, _, _ in
@@ -210,6 +215,7 @@ struct ListCommandBehaviorTests {
 
     try command.run()
     #expect(capturedQuery.value?.includeShared == false)
+    #expect(capturedIncludePasswordData.value == false)
   }
 
   @Test("run maps keychain errors to user-friendly messages")
@@ -222,7 +228,7 @@ struct ListCommandBehaviorTests {
       sharedOnly: false,
       personalOnly: false,
       showPasswords: false,
-      listPasswords: { _ in
+      listPasswords: { _, _ in
         throw KeychainError.itemNotFound
       },
       formatOutput: { _, _, _ in
@@ -286,8 +292,11 @@ struct ListCommandIntegrationTests {
       sharedOnly: false,
       personalOnly: false,
       showPasswords: false,
-      listPasswords: { query in
-        try manager.listPasswords(matching: query)
+      listPasswords: { query, includePasswordData in
+        try manager.listPasswords(
+          matching: query,
+          includePasswordData: includePasswordData
+        )
       },
       formatOutput: { items, style, showPasswords in
         OutputFormatter.format(items, style: style, showPasswords: showPasswords)

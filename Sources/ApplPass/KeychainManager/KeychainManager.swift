@@ -62,7 +62,10 @@ struct KeychainManager: Sendable {
   func getPassword(for query: KeychainQuery) throws -> KeychainItem {
     var result: CFTypeRef?
     let dictionary = try retrievalQuery(for: query)
-    let status = copyMatching(dictionary as CFDictionary, &result)
+    let status = self.copyMatchingWithFallback(
+      dictionary: dictionary,
+      result: &result
+    )
 
     guard status == errSecSuccess else {
       throw Self.mappedError(for: status)
@@ -72,7 +75,11 @@ struct KeychainManager: Sendable {
       throw KeychainError.unexpectedPasswordData
     }
 
-    return try Self.decodeItem(from: attributes, fallbackQuery: query)
+    return try Self.decodeItem(
+      from: attributes,
+      fallbackQuery: query,
+      allowMissingPasswordData: false
+    )
   }
 
   /// Lists all keychain password items matching the provided filters.
@@ -80,14 +87,24 @@ struct KeychainManager: Sendable {
   /// - Parameter query: Filters used to match keychain items.
   /// - Returns: Matching items. Returns an empty array when no items are found.
   /// - Throws: `KeychainError` when lookup fails for reasons other than not found.
-  func listPasswords(matching query: KeychainQuery) throws -> [KeychainItem] {
+  func listPasswords(
+    matching query: KeychainQuery,
+    includePasswordData: Bool = true
+  ) throws -> [KeychainItem] {
     var result: CFTypeRef?
-    let dictionary = try listingQuery(for: query)
-    let status = copyMatching(dictionary as CFDictionary, &result)
+    let dictionary = try listingQuery(for: query, includePasswordData: includePasswordData)
+    let status = self.copyMatchingWithFallback(
+      dictionary: dictionary,
+      result: &result
+    )
 
     switch status {
     case errSecSuccess:
-      return try Self.decodeItems(from: result, fallbackQuery: query)
+      return try Self.decodeItems(
+        from: result,
+        fallbackQuery: query,
+        allowMissingPasswordData: !includePasswordData
+      )
     case errSecItemNotFound:
       return []
     default:
@@ -288,6 +305,38 @@ struct KeychainManager: Sendable {
     return limit
   }
 
+  private func copyMatchingWithFallback(
+    dictionary: [String: Any],
+    result: inout CFTypeRef?
+  ) -> OSStatus {
+    let status = copyMatching(dictionary as CFDictionary, &result)
+    guard status == errSecParam else {
+      return status
+    }
+
+    guard let fallbackDictionary = Self.withDefaultSearchList(dictionary) else {
+      return status
+    }
+
+    return copyMatching(fallbackDictionary as CFDictionary, &result)
+  }
+
+  private static func withDefaultSearchList(_ dictionary: [String: Any]) -> [String: Any]? {
+    if dictionary[kSecMatchSearchList as String] != nil {
+      return nil
+    }
+
+    var keychain: SecKeychain?
+    let status = SecKeychainCopyDefault(&keychain)
+    guard status == errSecSuccess, let keychain else {
+      return nil
+    }
+
+    var fallbackDictionary = dictionary
+    fallbackDictionary[kSecMatchSearchList as String] = [keychain]
+    return fallbackDictionary
+  }
+
   private func retrievalQuery(for query: KeychainQuery) throws -> [String: Any] {
     guard var dictionary = try Self.buildQuery(for: query) as NSDictionary as? [String: Any] else {
       throw KeychainError.operationFailed(errSecParam)
@@ -300,13 +349,18 @@ struct KeychainManager: Sendable {
     return dictionary
   }
 
-  private func listingQuery(for query: KeychainQuery) throws -> [String: Any] {
+  private func listingQuery(
+    for query: KeychainQuery,
+    includePasswordData: Bool
+  ) throws -> [String: Any] {
     guard var dictionary = try Self.buildQuery(for: query) as NSDictionary as? [String: Any] else {
       throw KeychainError.operationFailed(errSecParam)
     }
 
     dictionary[kSecReturnAttributes as String] = kCFBooleanTrue
-    dictionary[kSecReturnData as String] = kCFBooleanTrue
+    if includePasswordData {
+      dictionary[kSecReturnData as String] = kCFBooleanTrue
+    }
     // Keep the caller-provided numeric limit from buildQuery.
     // For password items, forcing kSecMatchLimitAll while requesting data can be
     // rejected by Security.framework with errSecParam.
@@ -345,12 +399,19 @@ struct KeychainManager: Sendable {
 
   private static func decodeItem(
     from attributes: [String: Any],
-    fallbackQuery: KeychainQuery
+    fallbackQuery: KeychainQuery,
+    allowMissingPasswordData: Bool
   ) throws -> KeychainItem {
-    guard
-      let passwordData = attributes[kSecValueData as String] as? Data,
-      let password = String(data: passwordData, encoding: .utf8)
-    else {
+    let password: String
+    if let passwordData = attributes[kSecValueData as String] as? Data {
+      guard let decoded = String(data: passwordData, encoding: .utf8) else {
+        throw KeychainError.unexpectedPasswordData
+      }
+
+      password = decoded
+    } else if allowMissingPasswordData {
+      password = ""
+    } else {
       throw KeychainError.unexpectedPasswordData
     }
 
@@ -385,15 +446,26 @@ struct KeychainManager: Sendable {
 
   private static func decodeItems(
     from result: CFTypeRef?,
-    fallbackQuery: KeychainQuery
+    fallbackQuery: KeychainQuery,
+    allowMissingPasswordData: Bool
   ) throws -> [KeychainItem] {
     if let attributes = result as? [String: Any] {
-      return [try decodeItem(from: attributes, fallbackQuery: fallbackQuery)]
+      return [
+        try decodeItem(
+          from: attributes,
+          fallbackQuery: fallbackQuery,
+          allowMissingPasswordData: allowMissingPasswordData
+        )
+      ]
     }
 
     if let itemDictionaries = result as? [[String: Any]] {
       return try itemDictionaries.map { item in
-        try decodeItem(from: item, fallbackQuery: fallbackQuery)
+        try decodeItem(
+          from: item,
+          fallbackQuery: fallbackQuery,
+          allowMissingPasswordData: allowMissingPasswordData
+        )
       }
     }
 

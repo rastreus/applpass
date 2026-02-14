@@ -28,12 +28,15 @@ struct ListCommand: ParsableCommand {
   @Flag(name: .long, help: "Include password values in output.")
   var showPasswords = false
 
-  typealias ListPasswordsFunction = @Sendable (KeychainQuery) throws -> [KeychainItem]
+  typealias ListPasswordsFunction = @Sendable (KeychainQuery, Bool) throws -> [KeychainItem]
   typealias FormatFunction = @Sendable ([KeychainItem], OutputStyle, Bool) -> String
   typealias OutputFunction = @Sendable (String) -> Void
 
-  private var listPasswords: ListPasswordsFunction = { query in
-    try KeychainManager().listPasswords(matching: query)
+  private var listPasswords: ListPasswordsFunction = { query, includePasswordData in
+    try KeychainManager().listPasswords(
+      matching: query,
+      includePasswordData: includePasswordData
+    )
   }
   private var formatOutput: FormatFunction = { items, style, showPasswords in
     OutputFormatter.format(items, style: style, showPasswords: showPasswords)
@@ -129,7 +132,7 @@ struct ListCommand: ParsableCommand {
 
     let items: [KeychainItem]
     do {
-      items = try listPasswords(query)
+      items = try listPasswords(query, showPasswords)
     } catch let error as KeychainError {
       throw ListCommandError.keychainMessage(
         error.errorDescription ?? "Failed to list passwords."

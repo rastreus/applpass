@@ -21,15 +21,18 @@ struct DeleteCommand: ParsableCommand {
   var allAccounts = false
 
   typealias DeletePasswordFunction = @Sendable (KeychainQuery) throws -> Void
-  typealias ListPasswordsFunction = @Sendable (KeychainQuery) throws -> [KeychainItem]
+  typealias ListPasswordsFunction = @Sendable (KeychainQuery, Bool) throws -> [KeychainItem]
   typealias ConfirmDeleteFunction = @Sendable (String) throws -> Bool
   typealias OutputFunction = @Sendable (String) -> Void
 
   private var deletePassword: DeletePasswordFunction = { query in
     try KeychainManager().deletePassword(for: query)
   }
-  private var listPasswords: ListPasswordsFunction = { query in
-    try KeychainManager().listPasswords(matching: query)
+  private var listPasswords: ListPasswordsFunction = { query, includePasswordData in
+    try KeychainManager().listPasswords(
+      matching: query,
+      includePasswordData: includePasswordData
+    )
   }
   private var confirmDelete: ConfirmDeleteFunction = { prompt in
     try Self.promptForConfirmation(prompt: prompt)
@@ -147,7 +150,7 @@ struct DeleteCommand: ParsableCommand {
 
     let items: [KeychainItem]
     do {
-      items = try listPasswords(listQuery)
+      items = try listPasswords(listQuery, false)
     } catch let error as KeychainError {
       throw DeleteCommandError.keychainMessage(
         error.errorDescription ?? "Failed to load passwords for deletion."

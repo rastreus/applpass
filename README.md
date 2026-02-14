@@ -93,7 +93,7 @@ Key options:
 - `--service`, `--account`, `--search`
 - `--format table|json|csv|plain` (default: `table`)
 - `--shared-only`, `--personal-only`
-- `--show-passwords` to include password values in output
+- `--show-passwords` to include password values in output (this may trigger keychain access prompts)
 
 ### `add`
 
@@ -201,6 +201,8 @@ Common errors and resolutions:
   Verify the exact `--service` and `--account` values; try `applpass list --search <text>`.
 - `Access denied. Please allow access when prompted.`  
   Approve the keychain access prompt and retry.
+- Repeated keychain GUI prompts during `list`  
+  By default, `list` retrieves metadata only. Prompts increase when `--show-passwords` is used because secret data access is requested.
 - `Failed to copy password to clipboard.`  
   Confirm `/usr/bin/pbcopy` is available and permitted in the current session.
 

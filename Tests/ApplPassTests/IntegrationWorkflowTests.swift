@@ -140,8 +140,11 @@ struct IntegrationWorkflowTests {
       sharedOnly: false,
       personalOnly: false,
       showPasswords: false,
-      listPasswords: { query in
-        try fixture.manager.listPasswords(matching: query)
+      listPasswords: { query, includePasswordData in
+        try fixture.manager.listPasswords(
+          matching: query,
+          includePasswordData: includePasswordData
+        )
       },
       formatOutput: { items, style, showPasswords in
         OutputFormatter.format(items, style: style, showPasswords: showPasswords)
@@ -326,8 +329,11 @@ struct IntegrationWorkflowTests {
       deletePassword: { query in
         try fixture.manager.deletePassword(for: query)
       },
-      listPasswords: { query in
-        try fixture.manager.listPasswords(matching: query)
+      listPasswords: { query, includePasswordData in
+        try fixture.manager.listPasswords(
+          matching: query,
+          includePasswordData: includePasswordData
+        )
       },
       confirmDelete: { _ in
         Issue.record("Confirmation should be bypassed when --force is used.")
@@ -518,8 +524,11 @@ struct IntegrationWorkflowTests {
       sharedOnly: true,
       personalOnly: false,
       showPasswords: false,
-      listPasswords: { query in
-        try fixture.manager.listPasswords(matching: query)
+      listPasswords: { query, includePasswordData in
+        try fixture.manager.listPasswords(
+          matching: query,
+          includePasswordData: includePasswordData
+        )
       },
       formatOutput: { items, style, showPasswords in
         OutputFormatter.format(items, style: style, showPasswords: showPasswords)
@@ -541,8 +550,11 @@ struct IntegrationWorkflowTests {
       sharedOnly: false,
       personalOnly: true,
       showPasswords: false,
-      listPasswords: { query in
-        try fixture.manager.listPasswords(matching: query)
+      listPasswords: { query, includePasswordData in
+        try fixture.manager.listPasswords(
+          matching: query,
+          includePasswordData: includePasswordData
+        )
       },
       formatOutput: { items, style, showPasswords in
         OutputFormatter.format(items, style: style, showPasswords: showPasswords)

@@ -132,6 +132,44 @@ struct KeychainManagerGetUnitTests {
       _ = try manager.getPassword(for: query)
     }
   }
+
+  @Test("getPassword retries with default search list when initial query returns errSecParam")
+  func getPasswordRetriesWithDefaultSearchListAfterParameterError() throws {
+    let callCount = SendableBox(0)
+    let manager = KeychainManager { query, result in
+      let dictionary = query as NSDictionary
+      callCount.value += 1
+
+      if dictionary[kSecMatchSearchList as String] == nil {
+        return errSecParam
+      }
+
+      let item: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword as String,
+        kSecAttrService as String: "retry.example.com",
+        kSecAttrAccount as String: "bot@example.com",
+        kSecValueData as String: Data("secret-value".utf8),
+        kSecAttrSynchronizable as String: false,
+      ]
+      result?.pointee = item as CFDictionary
+      return errSecSuccess
+    }
+
+    let query = KeychainQuery(
+      service: "retry.example.com",
+      account: "bot@example.com",
+      domain: nil,
+      includeShared: false,
+      itemClass: .genericPassword,
+      limit: 1
+    )
+
+    let item = try manager.getPassword(for: query)
+    #expect(item.service == "retry.example.com")
+    #expect(item.account == "bot@example.com")
+    #expect(item.password == "secret-value")
+    #expect(callCount.value == 2)
+  }
 }
 
 @Suite(.serialized)
@@ -211,5 +249,13 @@ private final class TestKeychain: @unchecked Sendable {
 
     result?.pointee = match as CFDictionary
     return errSecSuccess
+  }
+}
+
+private final class SendableBox<Value>: @unchecked Sendable {
+  var value: Value
+
+  init(_ value: Value) {
+    self.value = value
   }
 }

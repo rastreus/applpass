@@ -111,4 +111,38 @@ struct KeychainManagerListTests {
     let items = try manager.listPasswords(matching: query)
     #expect(items.isEmpty)
   }
+
+  @Test("listPasswords can return metadata without requesting password data")
+  func listPasswordsSupportsMetadataOnlyQueries() throws {
+    let manager = KeychainManager { query, result in
+      let dictionary = query as NSDictionary
+      #expect(
+        (dictionary[kSecReturnAttributes as String] as? NSNumber)?.boolValue == true
+      )
+      #expect(dictionary[kSecReturnData as String] == nil)
+
+      let item: [String: Any] = [
+        kSecClass as String: kSecClassGenericPassword as String,
+        kSecAttrService as String: "metadata-only.example.com",
+        kSecAttrAccount as String: "bot@example.com",
+        kSecAttrSynchronizable as String: false,
+      ]
+      result?.pointee = item as CFDictionary
+      return errSecSuccess
+    }
+    let query = KeychainQuery(
+      service: "metadata-only.example.com",
+      account: "bot@example.com",
+      domain: nil,
+      includeShared: false,
+      itemClass: .genericPassword,
+      limit: 10
+    )
+
+    let items = try manager.listPasswords(matching: query, includePasswordData: false)
+    #expect(items.count == 1)
+    #expect(items[0].service == "metadata-only.example.com")
+    #expect(items[0].account == "bot@example.com")
+    #expect(items[0].password.isEmpty)
+  }
 }

@@ -70,7 +70,7 @@ struct DeleteCommandBehaviorTests {
       deletePassword: { _ in
         deleteCalls.value += 1
       },
-      listPasswords: { _ in
+      listPasswords: { _, _ in
         Issue.record("List path should not be used when --all-accounts is disabled.")
         return []
       },
@@ -112,7 +112,7 @@ struct DeleteCommandBehaviorTests {
       deletePassword: { query in
         deletedQuery.value = query
       },
-      listPasswords: { _ in
+      listPasswords: { _, _ in
         Issue.record("List path should not be used when --all-accounts is disabled.")
         return []
       },
@@ -136,6 +136,7 @@ struct DeleteCommandBehaviorTests {
   func runDeletesMultipleAccountsWhenAllAccountsEnabled() throws {
     let deletedQueries = SendableBox<[KeychainQuery]>([])
     let confirmationCalls = SendableBox(0)
+    let capturedIncludePasswordData = SendableBox<Bool?>(nil)
 
     var command = DeleteCommand(
       service: "example.com",
@@ -145,7 +146,8 @@ struct DeleteCommandBehaviorTests {
       deletePassword: { query in
         deletedQueries.value.append(query)
       },
-      listPasswords: { query in
+      listPasswords: { query, includePasswordData in
+        capturedIncludePasswordData.value = includePasswordData
         #expect(query.service == "example.com")
         #expect(query.account == nil)
 
@@ -166,6 +168,7 @@ struct DeleteCommandBehaviorTests {
 
     #expect(confirmationCalls.value == 0)
     #expect(deletedQueries.value.count == 2)
+    #expect(capturedIncludePasswordData.value == false)
     let deletedAccounts = Set(deletedQueries.value.compactMap(\.account))
     let expectedAccounts: Set<String> = [
       "first@example.com",
@@ -184,7 +187,7 @@ struct DeleteCommandBehaviorTests {
       deletePassword: { _ in
         throw KeychainError.authorizationDenied
       },
-      listPasswords: { _ in
+      listPasswords: { _, _ in
         []
       },
       confirmDelete: { _ in
@@ -234,8 +237,11 @@ struct DeleteCommandIntegrationTests {
       deletePassword: { query in
         try manager.deletePassword(for: query)
       },
-      listPasswords: { query in
-        try manager.listPasswords(matching: query)
+      listPasswords: { query, includePasswordData in
+        try manager.listPasswords(
+          matching: query,
+          includePasswordData: includePasswordData
+        )
       },
       confirmDelete: { _ in
         Issue.record("Confirmation should be skipped when --force is enabled.")
@@ -315,8 +321,11 @@ struct DeleteCommandIntegrationTests {
       deletePassword: { query in
         try manager.deletePassword(for: query)
       },
-      listPasswords: { query in
-        try manager.listPasswords(matching: query)
+      listPasswords: { query, includePasswordData in
+        try manager.listPasswords(
+          matching: query,
+          includePasswordData: includePasswordData
+        )
       },
       confirmDelete: { _ in
         Issue.record("Confirmation should be skipped when --force is enabled.")
