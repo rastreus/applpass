@@ -231,6 +231,51 @@ Optional formatting lint:
 swift format lint --recursive Sources/ Tests/
 ```
 
+## CI and Release Workflow
+
+- CI runs via `.github/workflows/ci.yml` on pushes to `main` and pull requests targeting `main`.
+- CI checks include: `swift build`, `swift test --verbose`, `swift format lint`, and `swift build -c release`.
+- Releases run via `.github/workflows/release.yml` on tags matching `v*` (for example, `v0.1.0`).
+- Release workflow builds and verifies the project, then uploads:
+  - `applpass-<tag>-macos-arm64.tar.gz`
+  - `applpass-<tag>-macos-arm64.sha256`
+- Release notes are sourced from the matching version section in `CHANGELOG.md`.
+
+### Manual CI Verification
+
+```bash
+git push origin main
+```
+
+Confirm the latest run in the GitHub Actions "CI" workflow succeeds.
+
+### Manual Release Verification
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Confirm the GitHub Actions "Release" workflow creates a GitHub release and
+attaches the `.tar.gz` and `.sha256` assets.
+
+## Optional Pre-commit Hook
+
+To lint formatting automatically before each commit:
+
+```bash
+git config core.hooksPath .githooks
+chmod +x .githooks/pre-commit
+```
+
+To disable temporarily for one commit:
+
+```bash
+SKIP=1 jj new
+```
+
+Keep `CHANGELOG.md` updated so release notes are generated correctly for each tag.
+
 ## Contributing
 
 Project workflow uses TCR (`test || commit || revert`) with Jujutsu (`jj`):

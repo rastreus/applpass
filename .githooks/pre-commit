@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+if [[ "${SKIP:-0}" == "1" || "${APPLPASS_SKIP_FORMAT_HOOK:-0}" == "1" ]]; then
+  echo "Skipping format lint hook."
+  exit 0
+fi
+
+if ! command -v swift >/dev/null 2>&1; then
+  echo "swift is not installed; skipping format lint."
+  exit 0
+fi
+
+if swift format --help >/dev/null 2>&1; then
+  swift format lint --recursive Sources/ Tests/
+else
+  swift run --disable-sandbox swift-format lint --recursive Sources/ Tests/
+fi
