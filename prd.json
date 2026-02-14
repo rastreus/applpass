@@ -131,7 +131,7 @@
       "dependencies": [
         "S06-keychain-add"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S08-keychain-delete",

@@ -72,3 +72,13 @@ Date: 2026-02-14T07:35:10Z
 - Added serialized integration-style add/get coverage with an in-memory test keychain seam; the test explicitly performs cleanup via delete in `defer`.
 - Gotcha: in this environment, direct `SecItemAdd` against system keychains is unreliable, so integration coverage continues to use in-process seams while validating query and status semantics.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 7 — S07-keychain-update — Keychain update operation
+Date: 2026-02-14T07:40:17Z
+- Added `KeychainManager.updatePassword(for:newPassword:)` in `Sources/ApplPass/KeychainManager/KeychainManager.swift` using `SecItemUpdate` with a dedicated update query path and update payload limited to `kSecValueData`.
+- Introduced an injectable `SecItemUpdate` seam in `KeychainManager` (`UpdateFunction`) to enable deterministic unit and integration testing without changing production defaults.
+- Implemented update error behavior for missing items (`errSecItemNotFound` → `KeychainError.itemNotFound`) with existing authorization/operation fallback mapping, plus empty replacement-password validation.
+- Added `Tests/ApplPassTests/KeychainManagerUpdateTests.swift` with unit coverage for query/update-attribute mapping, item-not-found behavior, and invalid empty input.
+- Added serialized integration-style update coverage (add → update → get) using an in-memory keychain harness, verifying updated password and preserved metadata (`service`, `account`, `label`, `itemClass`).
+- Gotcha: update queries should not include `kSecMatchLimit`; the implementation removes it before calling `SecItemUpdate` while preserving filter attributes.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
