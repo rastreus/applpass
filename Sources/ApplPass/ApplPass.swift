@@ -220,33 +220,75 @@ struct ApplPass: ParsableCommand {
   }
 
   mutating func run() throws {
-    let arguments = Array(CommandLine.arguments.dropFirst())
-    guard let subcommand = arguments.first else {
+    let executableName = Self.normalizedExecutableName(CommandLine.arguments.first)
+    var arguments = Array(CommandLine.arguments.dropFirst())
+
+    guard let firstArgument = arguments.first else {
+      print(Self.rootHelpText(executableName: executableName))
+      return
+    }
+
+    if Self.isHelpRequest(firstArgument) {
+      print(Self.rootHelpText(executableName: executableName))
+      return
+    }
+
+    if firstArgument == "help" {
+      let maybeSubcommand = arguments.dropFirst().first
+      if
+        let maybeSubcommand,
+        let helpText = Self.subcommandHelpText(
+          for: maybeSubcommand,
+          executableName: executableName
+        )
+      {
+        print(helpText)
+      } else {
+        print(Self.rootHelpText(executableName: executableName))
+      }
+      return
+    }
+
+    let subcommand = arguments.removeFirst()
+    guard Self.supportedSubcommands.contains(subcommand) else {
+      throw ApplPassCommandError.unknownSubcommand(subcommand)
+    }
+
+    if arguments.contains(where: Self.isHelpRequest) {
+      if let helpText = Self.subcommandHelpText(for: subcommand, executableName: executableName) {
+        print(helpText)
+        return
+      }
+
       throw ApplPassCommandError.missingSubcommand
     }
 
     switch subcommand {
     case "add":
-      var command = try AddCommand.parse(arguments: Array(arguments.dropFirst()))
+      var command = try AddCommand.parse(arguments: arguments)
       try command.run()
     case "delete":
-      var command = try DeleteCommand.parse(arguments: Array(arguments.dropFirst()))
+      var command = try DeleteCommand.parse(arguments: arguments)
       try command.run()
     case "generate":
-      var command = try GenerateCommand.parse(arguments: Array(arguments.dropFirst()))
+      var command = try GenerateCommand.parse(arguments: arguments)
       try command.run()
     case "get":
-      var command = try GetCommand.parse(arguments: Array(arguments.dropFirst()))
+      var command = try GetCommand.parse(arguments: arguments)
       try command.run()
     case "list":
-      var command = try ListCommand.parse(arguments: Array(arguments.dropFirst()))
+      var command = try ListCommand.parse(arguments: arguments)
       try command.run()
     case "update":
-      var command = try UpdateCommand.parse(arguments: Array(arguments.dropFirst()))
+      var command = try UpdateCommand.parse(arguments: arguments)
       try command.run()
     default:
       throw ApplPassCommandError.unknownSubcommand(subcommand)
     }
+  }
+
+  private static func isHelpRequest(_ argument: String) -> Bool {
+    argument == "-h" || argument == "--help"
   }
 }
 
@@ -255,12 +297,13 @@ enum ApplPassCommandError: Error, Sendable, Equatable, CustomStringConvertible {
   case unknownSubcommand(String)
 
   var description: String {
+    let availableCommands = ApplPass.supportedSubcommands.joined(separator: ", ")
+
     switch self {
     case .missingSubcommand:
-      return "Missing command. Available commands: add, delete, generate, get, list, update."
+      return "Missing command. Available commands: \(availableCommands)."
     case .unknownSubcommand(let name):
-      return
-        "Unknown command '\(name)'. Available commands: add, delete, generate, get, list, update."
+      return "Unknown command '\(name)'. Available commands: \(availableCommands)."
     }
   }
 }

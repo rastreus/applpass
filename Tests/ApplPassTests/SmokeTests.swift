@@ -15,17 +15,21 @@ struct SmokeTests {
 
   @Test("Missing command error lists available subcommands")
   func missingCommandErrorListsAvailableSubcommands() {
+    let commands = ApplPass.supportedSubcommands.joined(separator: ", ")
+
     #expect(
       ApplPassCommandError.missingSubcommand.description
-        == "Missing command. Available commands: add, delete, generate, get, list, update."
+        == "Missing command. Available commands: \(commands)."
     )
   }
 
   @Test("Unknown command error lists available subcommands")
   func unknownCommandErrorListsAvailableSubcommands() {
+    let commands = ApplPass.supportedSubcommands.joined(separator: ", ")
+
     #expect(
       ApplPassCommandError.unknownSubcommand("bad").description
-        == "Unknown command 'bad'. Available commands: add, delete, generate, get, list, update."
+        == "Unknown command 'bad'. Available commands: \(commands)."
     )
   }
 }
