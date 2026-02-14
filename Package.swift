@@ -1,6 +1,8 @@
 // swift-tools-version: 6.2
 import PackageDescription
 
+let applPassVersion = "0.1.0"
+
 let package = Package(
   name: "applpass",
   platforms: [.macOS(.v14)],
