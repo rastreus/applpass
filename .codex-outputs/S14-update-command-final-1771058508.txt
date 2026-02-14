@@ -1,0 +1,54 @@
+### TCR Plan
+1. Add `UpdateCommand` parser + error model with `service/account/stdin/generate/length/force`.
+2. Add parsing tests for long/short/equals/invalid/unknown args.
+3. Add run-flow tests for confirmation logic and `--force` bypass.
+4. Add integration test for update behavior against test keychain backend.
+5. Wire `update` in top-level CLI dispatch and smoke command-list messages.
+6. Run full verification and complete tracking files.
+
+### Implementation
+1. Cycle 1 (`feat(commands): add update command parser surface`, `212f37d3`)
+- Added `UpdateCommand` in `Sources/ApplPass/Commands/UpdateCommand.swift:6` with:
+  - option properties at `Sources/ApplPass/Commands/UpdateCommand.swift:11`, `Sources/ApplPass/Commands/UpdateCommand.swift:14`, `Sources/ApplPass/Commands/UpdateCommand.swift:26`
+  - flag properties at `Sources/ApplPass/Commands/UpdateCommand.swift:17`, `Sources/ApplPass/Commands/UpdateCommand.swift:20`, `Sources/ApplPass/Commands/UpdateCommand.swift:23`
+  - parser at `Sources/ApplPass/Commands/UpdateCommand.swift:86`
+  - run flow + confirmation + keychain update call at `Sources/ApplPass/Commands/UpdateCommand.swift:129`
+- Added initial parsing tests in `Tests/ApplPassTests/UpdateCommandTests.swift:6`.
+- Tests: `swift build --disable-sandbox` ✅, `swift test --disable-sandbox` ✅.
+- Decision: commit.
+- Note: pre-existing `.codex-outputs/S13-add-command-final-1771057903.txt` in working copy was included in this commit.
+
+2. Cycle 2 (`test(commands): add update command behavior coverage`, `27bc6c44`)
+- Expanded tests with confirmation and force coverage:
+  - confirmation cancellation test at `Tests/ApplPassTests/UpdateCommandTests.swift:84`
+  - force bypass test at `Tests/ApplPassTests/UpdateCommandTests.swift:126`
+  - behavior/error mapping tests at `Tests/ApplPassTests/UpdateCommandTests.swift:166`
+  - serialized integration update test at `Tests/ApplPassTests/UpdateCommandTests.swift:274`
+- Tests: `swift build --disable-sandbox` ✅, `swift test --disable-sandbox` ✅.
+- Decision: commit.
+
+3. Cycle 3 (`feat(cli): wire update command dispatch`, `5926156d`)
+- Wired `update` subcommand dispatch in `Sources/ApplPass/ApplPass.swift:28`.
+- Updated available-command error text in `Sources/ApplPass/ApplPass.swift:44`.
+- Updated smoke assertions in `Tests/ApplPassTests/SmokeTests.swift:20` and `Tests/ApplPassTests/SmokeTests.swift:28`.
+- Tests: `swift build --disable-sandbox` ✅, `swift test --disable-sandbox` ✅.
+- Decision: commit.
+
+4. Completion commit (`chore(ralph): complete story S14-update-command`, `a0479020`)
+- Updated story pass flag in `prd.json:264`.
+- Appended iteration log in `progress.txt:153`.
+- Decision: commit.
+
+No TCR reverts were needed; all cycles stayed green.
+
+### Verification
+Ran final suite successfully:
+1. `swift build --disable-sandbox` ✅
+2. `swift build -c release --disable-sandbox` ✅
+3. `swift test --disable-sandbox --verbose` ✅ (102 tests in 27 suites)
+4. `swift format lint --recursive .` ✅
+
+### Completion
+1. `S14-update-command` marked complete: `prd.json:284` is now `"passes": true`.
+2. Iteration summary appended: `progress.txt:153`.
+3. Tracking commit created: `a0479020` with message `chore(ralph): complete story S14-update-command`.
