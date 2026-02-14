@@ -25,6 +25,9 @@ struct ApplPass: ParsableCommand {
     case "list":
       var command = try ListCommand.parse(arguments: Array(arguments.dropFirst()))
       try command.run()
+    case "update":
+      var command = try UpdateCommand.parse(arguments: Array(arguments.dropFirst()))
+      try command.run()
     default:
       throw ApplPassCommandError.unknownSubcommand(subcommand)
     }
@@ -38,9 +41,9 @@ enum ApplPassCommandError: Error, Sendable, Equatable, CustomStringConvertible {
   var description: String {
     switch self {
     case .missingSubcommand:
-      return "Missing command. Available commands: add, get, list."
+      return "Missing command. Available commands: add, get, list, update."
     case .unknownSubcommand(let name):
-      return "Unknown command '\(name)'. Available commands: add, get, list."
+      return "Unknown command '\(name)'. Available commands: add, get, list, update."
     }
   }
 }
