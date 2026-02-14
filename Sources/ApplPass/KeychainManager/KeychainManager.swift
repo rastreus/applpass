@@ -169,6 +169,24 @@ struct KeychainManager: Sendable {
     }
   }
 
+  /// Deletes keychain items matching the provided query.
+  ///
+  /// Deletion is idempotent: when no matching item exists, this method still succeeds.
+  ///
+  /// - Parameter query: Filters used to select keychain items to delete.
+  /// - Throws: `KeychainError` when deletion fails for reasons other than item-not-found.
+  func deletePassword(for query: KeychainQuery) throws {
+    let searchQuery = try deleteQuery(for: query)
+    let status = delete(searchQuery as CFDictionary)
+
+    switch status {
+    case errSecSuccess, errSecItemNotFound:
+      return
+    default:
+      throw Self.mappedError(for: status)
+    }
+  }
+
   /// Converts a high-level query model into a keychain query dictionary.
   ///
   /// - Parameter query: User-facing query filters.
@@ -295,6 +313,15 @@ struct KeychainManager: Sendable {
   }
 
   private func updateQuery(for query: KeychainQuery) throws -> [String: Any] {
+    guard var dictionary = try Self.buildQuery(for: query) as NSDictionary as? [String: Any] else {
+      throw KeychainError.operationFailed(errSecParam)
+    }
+
+    dictionary.removeValue(forKey: kSecMatchLimit as String)
+    return dictionary
+  }
+
+  private func deleteQuery(for query: KeychainQuery) throws -> [String: Any] {
     guard var dictionary = try Self.buildQuery(for: query) as NSDictionary as? [String: Any] else {
       throw KeychainError.operationFailed(errSecParam)
     }
