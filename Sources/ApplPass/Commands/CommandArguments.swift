@@ -79,8 +79,4 @@ struct Flag: Sendable {
 @propertyWrapper
 struct OptionGroup<Value: Sendable>: Sendable {
   var wrappedValue: Value
-
-  init(wrappedValue: Value) {
-    self.wrappedValue = wrappedValue
-  }
 }

@@ -348,7 +348,7 @@
         "S15-delete-command",
         "S16-generate-command"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S18-integration-tests",

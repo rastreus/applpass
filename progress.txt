@@ -180,3 +180,12 @@ Date: 2026-02-14T15:30:30Z
 - Wired `generate` subcommand dispatch in `Sources/ApplPass/ApplPass.swift` and updated `Tests/ApplPassTests/SmokeTests.swift` available-command messaging to include `generate`.
 - Gotcha: in this environment SwiftPM sandboxing is blocked; verification commands must use `--disable-sandbox` for build/test.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+## Iteration 17 — S17-main-cli — Main CLI integration and help
+Date: 2026-02-14T15:48:25Z
+- Updated `Sources/ApplPass/ApplPass.swift` to define main CLI integration with shared subcommand metadata (`get`, `list`, `add`, `update`, `delete`, `generate`), root help, per-command help text with examples, and `@OptionGroup` global options.
+- Added deterministic CLI process handling in `ApplPass.main()` so success/help/version paths exit `0` and command errors exit `1`, while preserving user-friendly error output.
+- Added manifest-backed version resolution by reading `let applPassVersion` from `Package.swift`; `--version` now reports that manifest version.
+- Added `@OptionGroup` wrapper support in `Sources/ApplPass/Commands/CommandArguments.swift` and set `let applPassVersion = "0.1.0"` in `Package.swift` as the single manifest marker.
+- Expanded `Tests/ApplPassTests/SmokeTests.swift` coverage for subcommand wiring order, help/example text, and Package.swift version linkage.
+- Manual CLI verification passed: `.build/release/applpass --help`, `.build/release/applpass get --help`, `.build/release/applpass --version`, and unknown-command exit code `1`.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.

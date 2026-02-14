@@ -32,10 +32,12 @@ struct SmokeTests {
   @Test("Root help includes commands and examples")
   func rootHelpIncludesCommandsAndExamples() {
     let help = ApplPass.rootHelpText(executableName: "applpass")
+    let getExample =
+      "applpass get --service github.com --account bot@example.com --value-only"
 
     #expect(help.contains("COMMANDS:"))
     #expect(help.contains("EXAMPLES:"))
-    #expect(help.contains("applpass get --service github.com --account bot@example.com --value-only"))
+    #expect(help.contains(getExample))
     #expect(help.contains("applpass add --service github.com --account bot@example.com --stdin"))
   }
 

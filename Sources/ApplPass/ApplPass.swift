@@ -252,8 +252,7 @@ struct ApplPass: ParsableCommand {
 
     if firstArgument == "help" {
       let maybeSubcommand = arguments.dropFirst().first
-      if
-        let maybeSubcommand,
+      if let maybeSubcommand,
         let helpText = Self.subcommandHelpText(
           for: maybeSubcommand,
           executableName: executableName
