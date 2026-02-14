@@ -1,0 +1,55 @@
+### TCR Plan
+1. Add `SecItemUpdate` seam in `KeychainManager`.
+2. Implement `updatePassword(for:newPassword:)` with status mapping and validation.
+3. Add unit tests for query/update payload and error paths.
+4. Add serialized integration test for add → update → get metadata preservation.
+5. Run full verification suite.
+6. Mark story complete in tracking files and commit.
+
+### Implementation
+1. Cycle 1
+- Changed seam injection in `Sources/ApplPass/KeychainManager/KeychainManager.swift:16` and `Sources/ApplPass/KeychainManager/KeychainManager.swift:26`.
+- `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: commit (`feat(keychain): add SecItemUpdate seam`, `4ba5ba12`).
+
+2. Cycle 2
+- Implemented `updatePassword(for:newPassword:)` in `Sources/ApplPass/KeychainManager/KeychainManager.swift:146`.
+- Added `updateQuery(for:)` helper in `Sources/ApplPass/KeychainManager/KeychainManager.swift:290`.
+- `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: commit (`feat(keychain): implement updatePassword operation`, `66c20985`).
+
+3. Cycle 3
+- Added unit tests in `Tests/ApplPassTests/KeychainManagerUpdateTests.swift:6`:
+  - update query + attributes shape
+  - item-not-found mapping
+  - empty replacement password validation
+- `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: commit (`test(keychain): add updatePassword unit coverage`, `1750ecb6`).
+
+4. Cycle 4
+- Added integration test in `Tests/ApplPassTests/KeychainManagerUpdateTests.swift:82`.
+- Added in-memory update harness in `Tests/ApplPassTests/KeychainManagerUpdateTests.swift:133`.
+- `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: commit (`test(keychain): add updatePassword integration coverage`, `fb7343b6`).
+
+5. Completion commit
+- Updated tracking files and committed `chore(ralph): complete story S07-keychain-update` (`d4e82ba7`).
+
+No TCR reverts were needed; each cycle stayed green.
+
+### Verification
+Ran and passed:
+1. `swift build --disable-sandbox`
+2. `swift build -c release --disable-sandbox`
+3. `swift test --disable-sandbox --verbose`
+4. `swift format lint --recursive .`
+
+Result: all green, including new update tests (31 tests total).
+
+### Completion
+1. Updated `prd.json` so `S07-keychain-update` now has `"passes": true` (`prd.json`).
+2. Appended Iteration 7 entry to `progress.txt` (`progress.txt`).
+3. Committed completion tracking (`d4e82ba7`).
+4. Working copy is clean (`jj st` reports no changes).
+
+1. A pre-existing file `.codex-outputs/S06-keychain-add-final-1771054166.txt` was included in commit `4ba5ba12` because it was already pending in the working copy. If you want, I can do a follow-up commit to remove it.
