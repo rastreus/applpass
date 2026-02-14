@@ -137,6 +137,31 @@ struct KeychainManager: Sendable {
     throw Self.mappedError(for: status)
   }
 
+  /// Updates only the password bytes for existing keychain items matching the query.
+  ///
+  /// - Parameters:
+  ///   - query: Filters used to locate existing keychain items.
+  ///   - newPassword: Replacement password value.
+  /// - Throws: `KeychainError` when no item matches, input is invalid, or update fails.
+  func updatePassword(for query: KeychainQuery, newPassword: String) throws {
+    guard !newPassword.isEmpty else {
+      throw KeychainError.invalidParameter("newPassword cannot be empty")
+    }
+
+    let searchQuery = try updateQuery(for: query)
+    let attributesToUpdate: [String: Any] = [
+      kSecValueData as String: Data(newPassword.utf8)
+    ]
+    let status = update(
+      searchQuery as CFDictionary,
+      attributesToUpdate as CFDictionary
+    )
+
+    guard status == errSecSuccess else {
+      throw Self.mappedError(for: status)
+    }
+  }
+
   /// Converts a high-level query model into a keychain query dictionary.
   ///
   /// - Parameter query: User-facing query filters.
@@ -259,6 +284,15 @@ struct KeychainManager: Sendable {
     dictionary[kSecReturnData as String] = kCFBooleanTrue
     dictionary[kSecMatchLimit as String] = kSecMatchLimitAll
 
+    return dictionary
+  }
+
+  private func updateQuery(for query: KeychainQuery) throws -> [String: Any] {
+    guard var dictionary = try Self.buildQuery(for: query) as NSDictionary as? [String: Any] else {
+      throw KeychainError.operationFailed(errSecParam)
+    }
+
+    dictionary.removeValue(forKey: kSecMatchLimit as String)
     return dictionary
   }
 
