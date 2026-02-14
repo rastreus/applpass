@@ -138,3 +138,14 @@ Date: 2026-02-14T08:23:32Z
 - Updated `Tests/ApplPassTests/SmokeTests.swift` to validate updated command error messaging.
 - Gotcha: SwiftPM sandboxing is blocked in this environment, so all verification commands must use `--disable-sandbox`.
 - Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.
+
+## Iteration 13 — S13-add-command — Add command implementation
+Date: 2026-02-14T08:38:11Z
+- Added `Sources/ApplPass/Commands/AddCommand.swift` with `AddCommand` conforming to `ParsableCommand`, including options `service`, `account`, `label`, `length` and flags `stdin`, `generate`, `sync`.
+- Implemented explicit `add` argument parsing for `-s/--service`, `-a/--account`, `-l/--label`, `-n/--length`, `--stdin`, `-g/--generate`, `--sync`, plus `--key=value` forms with typed parse errors.
+- Implemented command execution flow with service/account validation, mutually-exclusive `--stdin`/`--generate` checks, input-source selection (stdin, generated, secure interactive prompt), and keychain insertion via `KeychainManager.addPassword(...)`.
+- Added secure interactive password input by disabling terminal echo with `termios`, restoring terminal settings on exit, and emitting a user-facing TTY guidance error when interactive input is unavailable.
+- Added `Tests/ApplPassTests/AddCommandTests.swift` coverage for parsing, stdin input handling, interactive input path, generate/length integration, conflict and validation errors, keychain/generator error mapping, and add→get integration behavior.
+- Wired `add` subcommand dispatch in `Sources/ApplPass/ApplPass.swift` and updated `Tests/ApplPassTests/SmokeTests.swift` available-command messaging to include `add`.
+- Gotcha: this repo’s vendored argument-parser metadata wrappers support only a single `@Option(name:)` value, so short aliases are handled in explicit parser logic while wrapper annotations remain metadata-only.
+- Verification passed: `swift build --disable-sandbox`, `swift build -c release --disable-sandbox`, `swift test --disable-sandbox --verbose`, `swift format lint --recursive .`.

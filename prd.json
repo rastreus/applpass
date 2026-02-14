@@ -258,7 +258,7 @@
         "S06-keychain-add",
         "S09-password-generator"
       ],
-      "passes": false
+      "passes": true
     },
     {
       "id": "S14-update-command",

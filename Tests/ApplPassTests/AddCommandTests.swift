@@ -351,7 +351,11 @@ struct AddCommandBehaviorTests {
       }
     )
 
-    #expect(throws: AddCommandError.keychainMessage("A password with these credentials already exists.")) {
+    #expect(
+      throws: AddCommandError.keychainMessage(
+        "A password with these credentials already exists."
+      )
+    ) {
       try command.run()
     }
   }
