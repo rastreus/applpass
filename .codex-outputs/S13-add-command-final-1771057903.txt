@@ -1,0 +1,41 @@
+### TCR Plan
+1. Implement `AddCommand` model/parser/run flow with Swift 6-safe injected seams.
+2. Add parsing + behavior + integration tests for `add`.
+3. Wire `add` into CLI dispatch and smoke error messaging.
+4. Run full verification suite.
+5. Mark story complete in tracking files and commit.
+
+### Implementation
+1. Cycle 1  
+- Changed: added `Sources/ApplPass/Commands/AddCommand.swift` with:
+`@Option` properties (`service`, `account`, `label`, `length`), `@Flag` properties (`stdin`, `generate`, `sync`), explicit parser (`-s/-a/-l/-n`, long forms, `--key=value`), validation, input-source selection (stdin/generate/interactive), secure interactive read via `termios` echo-off, `KeychainManager.addPassword(...)` call, and success message with service/account.
+- Test result: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: commit (`351fa11c`).
+
+2. Cycle 2  
+- Changed: added `Tests/ApplPassTests/AddCommandTests.swift` covering:
+parse behavior, stdin handling, interactive path, generate+length integration, required-option validation, conflicting flags, empty input, keychain/generator error mapping, and add→get integration.
+- Test result: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: commit (`335bf4b7`).
+
+3. Cycle 3  
+- Changed: wired `add` dispatch in `Sources/ApplPass/ApplPass.swift`; updated available-command strings and corresponding assertions in `Tests/ApplPassTests/SmokeTests.swift`.
+- Test result: `swift build --disable-sandbox && swift test --disable-sandbox` passed.
+- Decision: commit (`f4739da6`).
+
+4. Cycle 4  
+- Changed: fixed one lint line-length issue in `Tests/ApplPassTests/AddCommandTests.swift`; updated tracking files `prd.json` and `progress.txt`.
+- Test result: full verification suite passed.
+- Decision: commit (`f813b51d`).
+
+### Verification
+- `swift build --disable-sandbox` ✅
+- `swift build -c release --disable-sandbox` ✅
+- `swift test --disable-sandbox --verbose` ✅ (91 tests, 24 suites)
+- `swift format lint --recursive .` ✅
+
+### Completion
+- Updated `prd.json`: `S13-add-command` now has `"passes": true`.
+- Appended Iteration 13 entry to `progress.txt`.
+- Story completion committed as `chore(ralph): complete story S13-add-command` (`f813b51d`).
+- Current working copy is clean (`jj st` shows no changes).
