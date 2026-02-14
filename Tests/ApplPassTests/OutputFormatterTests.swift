@@ -105,6 +105,25 @@ struct OutputFormatterTests {
     #expect(output.contains("secret-one"))
     #expect(output.contains("secret-two"))
   }
+
+  @Test("Plain format outputs value-only rows for piping and redacts passwords by default")
+  func plainFormatValueOnlyWithoutPasswordsByDefault() {
+    let output = OutputFormatter.format(fixtures, style: .plain)
+    let lines = output.components(separatedBy: "\n")
+
+    #expect(lines == ["alpha\tbot", "beta-long\tadmin-user"])
+    #expect(!output.contains("SERVICE"))
+    #expect(!output.contains("secret-one"))
+    #expect(!output.contains("secret-two"))
+  }
+
+  @Test("Plain format includes password field when showPasswords is enabled")
+  func plainFormatIncludesPasswordsWhenRequested() {
+    let output = OutputFormatter.format(fixtures, style: .plain, showPasswords: true)
+    let lines = output.components(separatedBy: "\n")
+
+    #expect(lines == ["alpha\tbot\tsecret-one", "beta-long\tadmin-user\tsecret-two"])
+  }
 }
 
 private let fixtures = [

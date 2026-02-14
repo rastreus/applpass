@@ -77,9 +77,15 @@ struct OutputFormatter: Sendable {
     _ items: [KeychainItem],
     showPasswords: Bool
   ) -> String {
-    _ = items
-    _ = showPasswords
-    return ""
+    items
+      .map { item in
+        var fields = [item.service, item.account]
+        if showPasswords {
+          fields.append(item.password)
+        }
+        return fields.joined(separator: "\t")
+      }
+      .joined(separator: "\n")
   }
 
   private static func columns(showPasswords: Bool) -> [String] {
