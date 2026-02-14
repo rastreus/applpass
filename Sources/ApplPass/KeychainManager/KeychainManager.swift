@@ -3,10 +3,11 @@ import Security
 
 /// Builds Security-framework query dictionaries for keychain operations.
 struct KeychainManager: Sendable {
-  typealias CopyMatchingFunction = @Sendable (
-    CFDictionary,
-    UnsafeMutablePointer<CFTypeRef?>?
-  ) -> OSStatus
+  typealias CopyMatchingFunction =
+    @Sendable (
+      CFDictionary,
+      UnsafeMutablePointer<CFTypeRef?>?
+    ) -> OSStatus
 
   private let copyMatching: CopyMatchingFunction
 
